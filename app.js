@@ -380,6 +380,20 @@ function updateAuthMode(){
  $("#authPassword").autocomplete=signingUp?"new-password":"current-password";
 }
 function wire(){
+ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
+  const tab=b.dataset.tab;
+  document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===b));
+  $("#morePanel").classList.toggle("hidden",tab!=="more");
+  $("#historyPanel").classList.toggle("hidden",tab!=="history");
+  $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
+  $("#menuPanel").classList.toggle("hidden",tab!=="menu");
+  $("#shareButton").classList.toggle("hidden",tab!=="list");
+  $("#shareHint").classList.toggle("hidden",tab!=="list");
+  $(".list-panel").classList.toggle("hidden",tab!=="list");
+  $(".people-strip").classList.toggle("hidden",tab==="more");
+  if(tab==="history")refreshActivity();
+  if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
+ });
  $("#applyUpdate").onclick=()=>{if(waitingWorker){waitingWorker.postMessage({type:"SKIP_WAITING"});$("#applyUpdate").disabled=true;$("#applyUpdate").textContent="Updating…";}};
  $("#dismissUpdate").onclick=()=>$("#updateBanner").hidden=true;
  $("#authForm").onsubmit=auth;updateAuthMode();
@@ -401,7 +415,7 @@ function wire(){
  $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
  $("#cancelMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
  $("#useMealIcon").onclick=()=>{updateSelectedMealArt();$("#mealIconPickerDialog").close();};
- $("#mealIconSearch").addEventListener("input",renderMealIconPicker);
+ if($("#mealIconSearch"))$("#mealIconSearch").addEventListener("input",renderMealIconPicker);
  $("#mealIconMore").onclick=()=>{state.mealIconsExpanded=!state.mealIconsExpanded;renderMealIconPicker();};$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
  $("#closeListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#cancelListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#confirmListPicker").onclick=confirmMealIngredients;$("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;
  $("#datePrevMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()-1);renderDatePicker();};
@@ -413,20 +427,7 @@ function wire(){
  $("#shareInvite").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");const text=`Join my Luke & Beth shopping list! Open https://stankie1989.github.io/luke-beth-shopping-list/ and enter this invitation code: ${code}`;if(navigator.share){try{await navigator.share({title:"Luke & Beth’s Shopping List",text});}catch(e){if(e.name!=="AbortError")toast("Couldn't open sharing.");}}else{try{await navigator.clipboard.writeText(text);toast("Invitation copied — paste it into a message to Beth.");}catch(e){$("#inviteStatus").textContent=text;}}};
  $("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#moreSignOut").onclick=signOut;
- document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
-  const tab=b.dataset.tab;
-  document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===b));
-  $("#morePanel").classList.toggle("hidden",tab!=="more");
-  $("#historyPanel").classList.toggle("hidden",tab!=="history");
-  $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
-  $("#menuPanel").classList.toggle("hidden",tab!=="menu");
-  $("#shareButton").classList.toggle("hidden",tab!=="list");
-  $("#shareHint").classList.toggle("hidden",tab!=="list");
-  $(".list-panel").classList.toggle("hidden",tab!=="list");
-  $(".people-strip").classList.toggle("hidden",tab==="more");
-  if(tab==="history")refreshActivity();
-  if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
- });
+
 }
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
