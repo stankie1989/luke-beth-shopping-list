@@ -54,3 +54,19 @@ button:disabled{opacity:.55;cursor:wait}
 .item-name.is-new::after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;vertical-align:middle;border-radius:50%;background:#35df91;box-shadow:0 0 9px #35df9180}
 .tab-panel{margin-top:0}
 #notificationsPanel{padding:18px;margin-top:14px}
+
+
+/* Version 1.3.9: shared-list approval status and mockup-inspired panels */
+.list-status-card{display:flex;align-items:center;gap:13px;padding:15px 17px;margin:14px 0 10px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(120deg,#17213b,#121a30);box-shadow:0 10px 25px #0003}
+.status-symbol{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;font-size:19px;font-weight:800;background:#26334f;color:#dce6ff}
+.status-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.status-copy strong{font-size:14px}.status-copy span{font-size:11px;color:var(--muted);line-height:1.4}
+.list-status-card.status-liked{background:linear-gradient(110deg,#103d2b,#12452d);border-color:#168d4e}.status-liked .status-symbol{background:#1eaa5e;color:white}
+.list-status-card.status-awaiting{background:linear-gradient(110deg,#29204c,#211b43);border-color:#8054d8}.status-awaiting .status-symbol{background:#7448d4;color:white}
+.list-status-card.status-changed{background:linear-gradient(110deg,#49321b,#332719);border-color:#a66b2d}.status-changed .status-symbol{background:#d99131;color:#211608}
+.list-status-card.status-neutral{background:linear-gradient(110deg,#18284a,#1b2041);border-color:#354c83}
+.approval-card{padding:16px;margin:0 0 10px;border-radius:20px;border:1px solid #8054d8;background:linear-gradient(145deg,#30215b,#171c3a);box-shadow:0 12px 28px #0004}
+.approval-heading{display:flex;align-items:center;gap:12px}.approval-send{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:#7448d4;color:white;font-size:20px}.approval-heading>div{display:flex;flex-direction:column;gap:3px}.approval-heading strong{font-size:14px}.approval-heading span:not(.approval-send){font-size:11px;color:#d3c9f4;line-height:1.4}
+.approval-actions{display:flex;gap:9px;margin-top:14px}.approval-actions button{flex:1;border-radius:13px;padding:12px 10px;font-weight:800;font-size:13px}.like-button{border:1px solid #13a64f;background:linear-gradient(110deg,#12a94f,#087d3c);color:white}.dismiss-button{border:1px solid #82749d;background:#191a34;color:#f5f1ff}
+.share-button{margin-top:9px}.share-button:disabled{opacity:.45;cursor:not-allowed}
+.list-panel{background:linear-gradient(150deg,#121d39,#0e172c 75%);border-color:#26385f}.item{min-height:53px}.qty button{background:#1b2948;border-color:#2c3e67}
+:root[data-theme="light"] .list-status-card{background:#f0f3ff}.list-status-card.status-liked{background:#e6f8ed}.list-status-card.status-awaiting{background:#f0eaff}.list-status-card.status-changed{background:#fff2df}.list-status-card.status-neutral{background:#edf2ff}:root[data-theme="light"] .approval-card{background:#f1eaff;color:#21183a}:root[data-theme="light"] .approval-heading span:not(.approval-send){color:#51436e}:root[data-theme="light"] .dismiss-button{background:#fff;color:#241c38}

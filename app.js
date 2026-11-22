@@ -2,7 +2,7 @@ const SUPABASE_URL="https://vzyllteamuhvbgmoyfgr.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
-const state={user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],activity:[],theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function msg(id,s,error=false){const e=$(id);e.textContent=s;e.classList.toggle("error",error);}
@@ -20,7 +20,7 @@ function showApp(){
  $("#partnerInitial").textContent=(state.partner?.display_name||"?").charAt(0).toUpperCase();
  $("#partnerName").textContent=state.partner?.display_name||"Not joined";
  $("#partnerPerson").classList.toggle("not-joined",!state.partner);
- theme();renderHousehold();
+ theme();renderHousehold();renderListStatus();
 }
 function renderItems(){
  const host=$("#items");host.innerHTML="";
@@ -44,13 +44,13 @@ async function update(item,patch){
  const previous={...item};Object.assign(item,patch);renderItems();
  const {data,error}=await db.from("shopping_items").update({...patch,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",item.id).select("*").single();
  if(error){Object.assign(item,previous);renderItems();toast("Couldn't save: "+error.message);return false;}
- Object.assign(item,data);renderItems();return true;
+ Object.assign(item,data);renderItems();await refreshListStatus();return true;
 }
 async function removeItem(item){
  if(!confirm(`Delete “${item.name}” from the list?`))return;
  const previous=[...state.items];state.items=state.items.filter(x=>x.id!==item.id);renderItems();
  const {error}=await db.from("shopping_items").delete().eq("id",item.id);
- if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else toast("Item deleted.");
+ if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else{toast("Item deleted.");await refreshListStatus();}
 }
 function activityDescription(a){
  const d=a.details&&typeof a.details==="object"?a.details:{};
@@ -91,7 +91,47 @@ async function load(){
  state.partner=state.members.find(x=>x.user_id!==state.user.id)||null;state.household=hr.data;
  const names=Object.fromEntries(state.members.map(x=>[x.user_id,x.display_name]));
  state.items=ir.data||[];state.activity=(ar.data||[]).map(x=>({...x,display_name:names[x.actor_id]||"Household member"}));
- showApp();renderItems();renderActivity();$("#syncLabel").textContent="Live sync connected";
+ showApp();renderItems();renderActivity();await refreshListStatus();$("#syncLabel").textContent="Live sync connected";
+}
+async function refreshListStatus(){
+ if(!state.user||!state.householdId)return;
+ const [sr,shr]=await Promise.all([
+  db.from("shopping_list_state").select("household_id,list_version,updated_at").eq("household_id",state.householdId).maybeSingle(),
+  db.from("shopping_list_shares").select("id,household_id,list_version,sender_id,recipient_id,created_at").eq("household_id",state.householdId).order("created_at",{ascending:false}).limit(1).maybeSingle()
+ ]);
+ if(sr.error||shr.error)return;
+ state.listStatus=sr.data||null;state.latestShare=shr.data||null;state.latestApproval=null;
+ if(state.latestShare){
+  const {data,error}=await db.from("shopping_list_approvals").select("household_id,list_version,user_id,approved_at").eq("household_id",state.householdId).eq("list_version",state.latestShare.list_version).eq("user_id",state.latestShare.recipient_id).maybeSingle();
+  if(!error)state.latestApproval=data||null;
+ }
+ renderListStatus();
+}
+function renderListStatus(){
+ const card=$("#listStatusCard"),approval=$("#approvalCard");if(!card||!approval)return;
+ const version=state.listStatus?.list_version??1,share=state.latestShare,partner=state.partner;
+ card.className="list-status-card";approval.classList.add("hidden");
+ let symbol="↗",title="Ready to share",text=partner?`Share the latest list with ${partner.display_name} for approval.`:"Invite your partner to join your household first.",kind="status-neutral";
+ if(share&&Number(share.list_version)<Number(version)){
+  kind="status-changed";symbol="◷";title="Changes made";text=`Share with ${partner?.display_name||"your partner"} for a new like.`;
+ }else if(share&&Number(share.list_version)===Number(version)){
+  if(state.latestApproval){kind="status-liked";symbol="👍";title=share.recipient_id===state.user?.id?"You have liked the list ✓":`${state.partner?.display_name||"Your partner"} has liked the list ✓`;text=share.recipient_id===state.user?.id?`You're up to date with ${state.members.find(m=>m.user_id===share.sender_id)?.display_name||"your partner"}.`:"You're both up to date.";}
+  else if(share.recipient_id===state.user?.id){
+   kind="status-awaiting";symbol="➤";title=`${state.members.find(m=>m.user_id===share.sender_id)?.display_name||"Your partner"} shared the list`;text="Review the latest list and like to confirm.";
+   if(!state.approvalDismissed){approval.classList.remove("hidden");$("#approvalTitle").textContent=`${state.members.find(m=>m.user_id===share.sender_id)?.display_name||"Your partner"} shared the list`;$("#approvalText").textContent="Review the changes and like to confirm.";}
+  }else{kind="status-awaiting";symbol="◷";title=`Shared with ${state.partner?.display_name||"your partner"}`;text=`Waiting for ${state.partner?.display_name||"them"} to review and like the list.`;}
+ }
+ card.classList.add(kind);$("#statusSymbol").textContent=symbol;$("#statusTitle").textContent=title;$("#statusText").textContent=text;
+ $("#shareLabel").textContent="Share with "+(partner?.display_name||"your partner");
+ $("#shareHint").textContent=kind==="status-liked"?"The latest list has been approved by both of you.":kind==="status-awaiting"?"Your partner will see a prompt to review and like the list.":"Changes sync automatically. Share when you're ready for approval.";
+ $("#shareButton").disabled=!partner;
+}
+async function approveList(){
+ const share=state.latestShare;if(!share||share.recipient_id!==state.user.id)return;
+ const b=$("#likeListButton");busy(b,true,"Saving…");
+ const {error}=await db.from("shopping_list_approvals").upsert({household_id:state.householdId,list_version:share.list_version,user_id:state.user.id},{onConflict:"household_id,list_version,user_id"});
+ busy(b,false);if(error){toast("Couldn't save your like: "+error.message);return;}
+ state.latestApproval={user_id:state.user.id,list_version:share.list_version};state.approvalDismissed=false;renderListStatus();toast("You've liked the latest shopping list.");
 }
 function renderHousehold(){
  $("#inviteCodeDisplay").textContent=state.household?.invite_code||"Not available";
@@ -126,9 +166,12 @@ function subscribe(){
  state.channel=db.channel("home-"+state.householdId,{config:{presence:{key:state.user.id}}})
  .on("presence",{event:"sync"},updatePresence)
  .on("postgres_changes",{event:"*",schema:"public",table:"household_members",filter:`household_id=eq.${state.householdId}`},async()=>{const {data}=await db.from("household_members").select("user_id,display_name,joined_at").eq("household_id",state.householdId);if(data){state.members=data;state.partner=data.find(m=>m.user_id!==state.user.id)||null;showApp();}})
- .on("postgres_changes",{event:"*",schema:"public",table:"shopping_items",filter:`household_id=eq.${state.householdId}`},async()=>{const {data}=await db.from("shopping_items").select("*").eq("household_id",state.householdId).order("created_at");if(data){state.items=data;renderItems();}})
+ .on("postgres_changes",{event:"*",schema:"public",table:"shopping_items",filter:`household_id=eq.${state.householdId}`},async()=>{const {data}=await db.from("shopping_items").select("*").eq("household_id",state.householdId).order("created_at");if(data){state.items=data;renderItems();await refreshListStatus();}})
  .on("postgres_changes",{event:"*",schema:"public",table:"activity_events",filter:`household_id=eq.${state.householdId}`},async()=>{const {data}=await db.from("activity_events").select("*").eq("household_id",state.householdId).order("created_at",{ascending:false}).limit(12);const {data:ms}=await db.from("household_members").select("user_id,display_name").eq("household_id",state.householdId);const names=Object.fromEntries((ms||[]).map(x=>[x.user_id,x.display_name]));state.activity=(data||[]).map(x=>({...x,display_name:names[x.actor_id]||"Household member"}));renderActivity();})
  .on("postgres_changes",{event:"INSERT",schema:"public",table:"share_events",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new.recipient_id===state.user.id)toast("Your partner shared the shopping list.");})
+ .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_state",filter:`household_id=eq.${state.householdId}`},()=>refreshListStatus())
+ .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_shares",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new?.recipient_id===state.user.id){state.approvalDismissed=false;toast(`${state.members.find(m=>m.user_id===payload.new.sender_id)?.display_name||"Your partner"} shared the shopping list.`);}refreshListStatus();})
+ .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_approvals",filter:`household_id=eq.${state.householdId}`},()=>refreshListStatus())
  .subscribe(async status=>{if(status==="SUBSCRIBED"){await setEditing(false);$("#syncLabel").textContent="Live sync connected";}});
 }
 async function enter(){const {data,error}=await db.from("household_members").select("*").eq("user_id",state.user.id).limit(1);if(error)throw error;if(!data?.length){state.member={display_name:$("#authName").value.trim()||state.user.user_metadata?.display_name||state.user.email.split("@")[0]};setup();return;}state.member=data[0];state.householdId=data[0].household_id;await load();subscribe();}
@@ -153,7 +196,8 @@ function wire(){
  $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,name,quantity:1,is_bought:false,created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast("Added to your shared list.");}};
  $("#clearBought").onclick=async()=>{const bought=state.items.filter(x=>x.is_bought);if(!bought.length)return toast("No bought items to clear.");const button=$("#clearBought");button.disabled=true;const {error}=await db.from("shopping_items").delete().eq("household_id",state.householdId).eq("is_bought",true);button.disabled=false;if(error){toast("Couldn't clear bought items: "+error.message);return;}const removedIds=new Set(bought.map(x=>x.id));state.items=state.items.filter(x=>!removedIds.has(x.id));renderItems();toast(`Cleared ${bought.length} bought item${bought.length===1?"":"s"}.`);};
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
- $("#shareButton").onclick=()=>$("#shareDialog").showModal();$("#confirmShare").onclick=async e=>{e.preventDefault();$("#shareDialog").close();if(!state.partner)return toast("Your partner hasn't joined yet.");const {error}=await db.from("share_events").insert({household_id:state.householdId,sender_id:state.user.id,recipient_id:state.partner.user_id});toast(error?error.message:"Shared with "+state.partner.display_name+".");};
+ $("#likeListButton").onclick=approveList;$("#dismissApproval").onclick=()=>{state.approvalDismissed=true;$("#approvalCard").classList.add("hidden");};
+ $("#shareButton").onclick=()=>$("#shareDialog").showModal();$("#confirmShare").onclick=async e=>{e.preventDefault();$("#shareDialog").close();if(!state.partner)return toast("Your partner hasn't joined yet.");const version=state.listStatus?.list_version??1;const {error}=await db.from("shopping_list_shares").insert({household_id:state.householdId,list_version:version,sender_id:state.user.id,recipient_id:state.partner.user_id});if(error){toast("Couldn\'t share: "+error.message);return;}const notify=await db.from("share_events").insert({household_id:state.householdId,sender_id:state.user.id,recipient_id:state.partner.user_id});if(notify.error)console.warn(notify.error);state.approvalDismissed=false;await refreshListStatus();toast("Shared with "+state.partner.display_name+".");};
  $("#settingsDialog").addEventListener("click",e=>{if(e.target===$("#settingsDialog"))$("#settingsDialog").close();});$("#shareDialog").addEventListener("click",e=>{if(e.target===$("#shareDialog"))$("#shareDialog").close();});
  $("#copyInviteCode").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");try{await navigator.clipboard.writeText(code);$("#inviteStatus").textContent="Invitation code copied.";toast("Invite code copied.");}catch(e){$("#inviteStatus").textContent="Please copy the code manually."; }};
  $("#shareInvite").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");const text=`Join my Luke & Beth shopping list! Open https://stankie1989.github.io/luke-beth-shopping-list/ and enter this invitation code: ${code}`;if(navigator.share){try{await navigator.share({title:"Luke & Beth’s Shopping List",text});}catch(e){if(e.name!=="AbortError")toast("Couldn't open sharing.");}}else{try{await navigator.clipboard.writeText(text);toast("Invitation copied — paste it into a message to Beth.");}catch(e){$("#inviteStatus").textContent=text;}}};
@@ -172,7 +216,7 @@ function wire(){
   if(tab==="history")refreshActivity();
  });
 }
-async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible")refreshActivity();},5000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"){refreshActivity();refreshListStatus();}},5000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   const hadController=!!navigator.serviceWorker.controller;
   if(hadController)navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
   navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
