@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=1.5.11">
+  <link rel="stylesheet" href="./styles.css?v=1.5.12">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -70,13 +70,21 @@
           <span id="activeListVisibility" class="shared-pill">Shared</span>
         </div>
         <div class="list-switcher"><span id="activeListName" class="visually-hidden" aria-live="polite"></span><select id="listSelector" aria-label="Choose shopping list"></select><button id="newListButton" class="add-submit" type="button">＋ List</button><button id="manageListsButton" class="secondary-button compact" type="button">Manage</button></div>
-        <div id="items" class="items" aria-live="polite"></div>
+        <button id="shoppingModeButton" class="shopping-mode-launch" type="button">🛒 &nbsp; Shopping Mode <span>›</span></button><div id="items" class="items" aria-live="polite"></div>
         <form id="addForm" class="add-row">
           <button class="add-symbol" type="submit" aria-label="Add item">＋</button>
           <input id="newItem" autocomplete="off" maxlength="80" placeholder="Add an item..." aria-label="New shopping item">
           <button class="add-submit" type="submit">Add</button>
         </form>
         <div class="list-footer"><span id="remainingCount">0 items remaining</span><button id="clearBought" class="text-button">Clear bought</button></div>
+      </section>
+
+      <section id="shoppingModeScreen" class="shopping-mode-screen hidden" aria-label="Shopping mode">
+        <header class="shopping-mode-header"><div><span class="shopping-mode-icon">🛒</span><h2>Shopping Mode</h2></div><button id="exitShoppingMode" class="shopping-mode-close" type="button" aria-label="Exit shopping mode">×</button></header>
+        <p class="shopping-mode-subtitle">Your shopping list, nice and simple</p>
+        <div class="shopping-mode-progress"><span>🛒</span><strong id="shoppingModeCount">0 items to buy</strong></div>
+        <div id="shoppingModeItems" class="shopping-mode-items" aria-live="polite"></div>
+        <footer class="shopping-mode-footer"><strong id="shoppingModeRemaining">0 remaining</strong><button id="doneShopping" class="add-submit" type="button">✓ Done Shopping</button></footer>
       </section>
 
       <section id="historyPanel" class="tab-panel hidden">
@@ -157,6 +165,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.5.11"></script>
+  <script src="./app.js?v=1.5.12"></script>
 </body>
 </html>

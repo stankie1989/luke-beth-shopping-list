@@ -3,7 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
-const state={user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={shoppingMode:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -67,23 +67,31 @@ async function createList(){const name=prompt("Name your new list:");if(name===n
 async function changeListVisibility(list){const next=!list.is_shared;const promptText=next?`Make “${list.name}” shared? Your partner will immediately see its existing items.`:`Make “${list.name}” private? Your partner will no longer be able to see it.`;if(!confirm(promptText))return;const {data,error}=await db.from("shopping_lists").update({is_shared:next}).eq("id",list.id).select("*").single();if(error)return toast("Couldn't change visibility: "+error.message);Object.assign(list,data);renderListControls();if(state.currentListId===list.id)await refreshCurrentList();toast(next?"List is now shared.":"List is now private.");}
 async function renameList(list){const name=prompt("Rename list:",list.name);if(name===null)return;const clean=name.trim();if(!clean)return toast("List name can't be empty.");const {data,error}=await db.from("shopping_lists").update({name:clean.slice(0,40)}).eq("id",list.id).select("*").single();if(error)return toast("Couldn't rename list: "+error.message);Object.assign(list,data);renderListControls();toast("List renamed.");}
 async function deleteList(list){if(state.lists.length<2)return toast("You need to keep at least one list.");if(!confirm(`Delete “${list.name}” and all its items? This cannot be undone.`))return;const {error}=await db.from("shopping_lists").delete().eq("id",list.id);if(error)return toast("Couldn't delete list: "+error.message);state.lists=state.lists.filter(x=>x.id!==list.id);if(state.currentListId===list.id)state.currentListId=state.lists[0].id;localStorage.setItem(`lb-current-list-${state.householdId}`,state.currentListId);renderListControls();await refreshCurrentList();toast("List deleted.");}
-function renderItems(){
- const host=$("#items");host.innerHTML="";
- state.items.forEach(item=>{
-  const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"");
-  const c=document.createElement("input");c.type="checkbox";c.className="check";c.checked=!!item.is_bought;c.setAttribute("aria-label",`Mark ${item.name} as ${item.is_bought?"not bought":"bought"}`);c.addEventListener("change",()=>update(item,{is_bought:c.checked}));
-  const n=document.createElement("button");n.type="button";n.className="item-name";n.textContent=item.name;
-  const addedAt=item.created_at?new Date(item.created_at).getTime():0;
-  const isNew=Number.isFinite(addedAt)&&addedAt>0&&(Date.now()-addedAt)<2*60*60*1000;
-  n.classList.toggle("is-new",isNew);
-  n.setAttribute("aria-label",isNew?`${item.name}, newly added`:item.name);
-  n.title=isNew?"Added in the last 2 hours · Tap to edit":"Tap to edit item name";
+function buildItemRow(item,shopping=false){
+ const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"")+(shopping?" shopping-mode-item":"");
+ const c=document.createElement("input");c.type="checkbox";c.className=shopping?"shopping-mode-check":"check";c.checked=!!item.is_bought;c.setAttribute("aria-label",`Mark ${item.name} as ${item.is_bought?"not bought":"bought"}`);c.addEventListener("change",()=>update(item,{is_bought:c.checked}));
+ const n=document.createElement(shopping?"span":"button");if(!shopping)n.type="button";n.className=shopping?"shopping-mode-item-name":"item-name";n.textContent=item.name;
+ if(!shopping){
+  const addedAt=item.created_at?new Date(item.created_at).getTime():0;const isNew=Number.isFinite(addedAt)&&addedAt>0&&(Date.now()-addedAt)<2*60*60*1000;n.classList.toggle("is-new",isNew);n.setAttribute("aria-label",isNew?`${item.name}, newly added`:item.name);n.title=isNew?"Added in the last 2 hours · Tap to edit":"Tap to edit item name";
   n.addEventListener("click",async()=>{const value=prompt("Edit item name:",item.name);if(value===null)return;const name=value.trim();if(!name)return toast("Item name can't be empty.");if(name===item.name)return;await update(item,{name:name.slice(0,80)});});
   const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.type="button";m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const plus=document.createElement("button");plus.type="button";plus.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});plus.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,plus);
-  const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>removeItem(item);
-  row.append(c,n,q,del);host.append(row);
- });
+  const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>removeItem(item);row.append(c,n,q,del);
+ }else{const q=document.createElement("span");q.className="shopping-mode-quantity";q.textContent=item.quantity>1?`×${item.quantity}`:"";row.append(c,n,q);}
+ return row;
+}
+function renderItems(){
+ const host=$("#items");host.innerHTML="";const modeHost=$("#shoppingModeItems");if(modeHost)modeHost.innerHTML="";
+ state.items.forEach(item=>{host.append(buildItemRow(item));if(modeHost)modeHost.append(buildItemRow(item,true));});
  const left=state.items.filter(x=>!x.is_bought).length;$("#remainingCount").textContent=`${left} item${left===1?"":"s"} remaining`;
+ if($("#shoppingModeCount")){$("#shoppingModeCount").textContent=`${left} item${left===1?"":"s"} to buy` ;$("#shoppingModeRemaining").textContent=`${left} remaining`;}
+}
+function setShoppingMode(enabled){
+ state.shoppingMode=enabled;$("#appShell").classList.toggle("shopping-mode-active",enabled);
+ $(".topbar").classList.toggle("hidden",enabled);$(".people-strip").classList.toggle("hidden",enabled);
+ $(".list-panel").classList.toggle("hidden",enabled);$("#shareButton").classList.toggle("hidden",enabled);$("#shareHint").classList.toggle("hidden",enabled);
+ $("#historyPanel").classList.add("hidden");$("#notificationsPanel").classList.add("hidden");$("#morePanel").classList.add("hidden");
+ $(".bottom-nav").classList.toggle("hidden",enabled);$("#shoppingModeScreen").classList.toggle("hidden",!enabled);
+ if(enabled)renderItems();
 }
 async function update(item,patch){
  const previous={...item};Object.assign(item,patch);renderItems();
@@ -237,7 +245,7 @@ function wire(){
  $("#applyUpdate").onclick=()=>{if(waitingWorker){waitingWorker.postMessage({type:"SKIP_WAITING"});$("#applyUpdate").disabled=true;$("#applyUpdate").textContent="Updating…";}};
  $("#dismissUpdate").onclick=()=>$("#updateBanner").hidden=true;
  $("#authForm").onsubmit=auth;updateAuthMode();
- $("#listSelector").onchange=e=>switchList(e.target.value);$("#newListButton").onclick=createList;$("#manageCreateList").onclick=()=>{createList();};$("#manageListsButton").onclick=()=>$("#manageListsDialog").showModal();$("#closeManageLists").onclick=()=>$("#manageListsDialog").close();
+ $("#shoppingModeButton").onclick=()=>setShoppingMode(true);$("#exitShoppingMode").onclick=()=>setShoppingMode(false);$("#doneShopping").onclick=()=>setShoppingMode(false);$("#listSelector").onchange=e=>switchList(e.target.value);$("#newListButton").onclick=createList;$("#manageCreateList").onclick=()=>{createList();};$("#manageListsButton").onclick=()=>$("#manageListsDialog").showModal();$("#closeManageLists").onclick=()=>$("#manageListsDialog").close();
  $("#authModeToggle").onclick=()=>{state.authMode=state.authMode==="signin"?"signup":"signin";updateAuthMode();msg("#authMessage","");};
  $("#createHousehold").onclick=createHome;$("#joinHousehold").onclick=joinHome;$("#signOutSetup").onclick=signOut;$("#signOutButton").onclick=()=>{ $("#settingsDialog").close();signOut();};
  $("#newItem").addEventListener("focus",()=>setEditing(true));
