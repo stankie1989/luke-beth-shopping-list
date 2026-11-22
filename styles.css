@@ -331,3 +331,16 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .missed-meal-actions{display:flex;flex-direction:column;gap:6px}
 .missed-meal-actions button{font-size:10px;padding:8px 9px;white-space:nowrap}
 @media(max-width:390px){.meal-complete-toggle{width:24px;height:24px}.missed-meal-row{gap:7px}.missed-meal-actions button{font-size:9px;padding:7px}.missed-meal-icon{width:34px;height:34px}}
+
+/* v1.7.1 – today marker and favourite removal */
+.menu-day-today{position:relative;background:linear-gradient(100deg,#08b8f512,#922cff0b);border-radius:13px;padding-left:5px;padding-right:5px;margin-left:-5px;margin-right:-5px}
+.menu-day-today .menu-day-heading strong{color:var(--blue);font-weight:900}
+.menu-day-number{font-size:17px;font-weight:800;color:var(--text)}
+.menu-day-today .menu-day-number{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:#fff;box-shadow:0 4px 14px #6334e944}
+.today-label{font-size:8px;font-style:normal;font-weight:900;letter-spacing:.06em;color:var(--blue);padding:3px 5px;border-radius:6px;background:#08b8f51a}
+.favourite-row{gap:9px}
+.favourite-actions{display:flex;align-items:center;gap:6px;flex:none}
+.favourite-actions .secondary-button{white-space:nowrap}
+.favourite-remove{width:36px;height:36px;flex:none;border:1px solid #ff667044;border-radius:11px;background:#ff667018;color:#ff8994;font-size:22px;line-height:1}
+.favourite-remove:active{transform:scale(.96)}
+@media(max-width:390px){.favourite-actions{gap:5px}.favourite-actions .secondary-button{padding:9px 8px;font-size:11px}.favourite-remove{width:33px;height:33px}}

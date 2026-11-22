@@ -95,8 +95,8 @@ function renderMenu(){
   const heading=document.createElement("h3");const ws=new Date(start);ws.setDate(ws.getDate()+w*7);const we=new Date(ws);we.setDate(we.getDate()+6);heading.textContent=`Week ${w+1} · ${dateLabel(localISO(ws))} – ${dateLabel(localISO(we))}`;week.append(heading);
   for(let d=0;d<7;d++){
    const date=new Date(ws);date.setDate(date.getDate()+d);const iso=localISO(date);
-   const day=document.createElement("div");day.className="menu-day";
-   const dayhead=document.createElement("div");dayhead.className="menu-day-heading";dayhead.innerHTML=`<strong>${date.toLocaleDateString("en-GB",{weekday:"short"})}</strong><span>${date.getDate()}</span>`;day.append(dayhead);
+   const isToday=iso===localISO(new Date());const day=document.createElement("div");day.className="menu-day"+(isToday?" menu-day-today":"");
+   const dayhead=document.createElement("div");dayhead.className="menu-day-heading";dayhead.innerHTML=`<strong>${date.toLocaleDateString("en-GB",{weekday:"short"})}</strong><span class="menu-day-number">${date.getDate()}</span>${isToday?'<em class="today-label">TODAY</em>':""}`;day.append(dayhead);
    const meals=state.menuEntries.filter(x=>x.entry_date===iso).sort((a,b)=>["dinner","breakfast","lunch"].indexOf(a.meal_type)-["dinner","breakfast","lunch"].indexOf(b.meal_type));
    const dinner=meals.find(x=>x.meal_type==="dinner");
    const slots=[{type:"dinner",label:"Dinner",primary:true},...meals.filter(x=>x.meal_type!=="dinner").map(x=>({type:x.meal_type,label:x.meal_type==="breakfast"?"Breakfast":"Lunch",entry:x}))];
@@ -266,7 +266,7 @@ async function loadMenuFavourites(){
 async function showFavourites(){
  await loadMenuFavourites();const host=$("#favouritesList");host.innerHTML="";
  if(!state.menuFavourites.length){host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it."; }
- state.menuFavourites.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");icon.textContent=mealImage(f.image_key)[1];const name=document.createElement("strong");name.textContent=f.name;const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{state.pendingFavourite=f;$("#favouritesDialog").close();openDatePicker(localISO(new Date()),"dinner","favourite");};row.append(icon,name,use);host.append(row);});
+ state.menuFavourites.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");icon.textContent=mealImage(f.image_key)[1];const name=document.createElement("strong");name.textContent=f.name;const actions=document.createElement("div");actions.className="favourite-actions";const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{state.pendingFavourite=f;$("#favouritesDialog").close();openDatePicker(localISO(new Date()),"dinner","favourite");};const remove=document.createElement("button");remove.type="button";remove.className="favourite-remove";remove.textContent="×";remove.title="Remove favourite";remove.setAttribute("aria-label",`Remove ${f.name} from favourites`);remove.onclick=async()=>{if(!confirm(`Remove “${f.name}” from favourite meals? This won't delete meals already planned.`))return;const {error}=await db.from("menu_favourites").delete().eq("id",f.id);if(error)return toast("Couldn't remove favourite: "+error.message);state.menuFavourites=state.menuFavourites.filter(x=>x.id!==f.id);row.remove();if(!state.menuFavourites.length)host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it.";toast("Favourite removed.");};actions.append(use,remove);row.append(icon,name,actions);host.append(row);});
  $("#favouritesDialog").showModal();
 }
 async function addMealIngredients(entry){
@@ -504,21 +504,23 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>{
-   const showUpdate=worker=>{waitingWorker=worker;$("#updateBanner").hidden=false;};
-   if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);
+  navigator.serviceWorker.register("./sw.js?v=1.7.1",{updateViaCache:"none"}).then(reg=>{
+   const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
+   const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
+   inspectRegistration();
    reg.addEventListener("updatefound",()=>{
-    const installing=reg.installing;
-    if(!installing)return;
+    const installing=reg.installing;if(!installing)return;
     installing.addEventListener("statechange",()=>{
      if(installing.state==="installed"&&navigator.serviceWorker.controller)showUpdate(installing);
     });
    });
-   const checkForAppUpdate=()=>reg.update().catch(()=>{});
+   const checkForAppUpdate=()=>reg.update().then(inspectRegistration).catch(()=>{});
    checkForAppUpdate();
    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkForAppUpdate();});
    window.addEventListener("pageshow",checkForAppUpdate);
-   window.setInterval(checkForAppUpdate,60*60*1000);
-  }).catch(()=>{});
- }}
+   window.addEventListener("online",checkForAppUpdate);
+   window.setInterval(checkForAppUpdate,5*60*1000);
+  }).catch(error=>console.warn("App update check failed",error));
+ }
+}
 init();
