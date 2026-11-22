@@ -28,3 +28,16 @@ button,input,select{font:inherit}.app-shell{max-width:650px;min-height:100vh;mar
 .setup-panel>.text-button{margin-top:18px}
 button:disabled{opacity:.55;cursor:wait}
 @media(max-width:520px){.auth-panel,.setup-panel{margin:18px 12px;padding:22px}}
+
+.more-panel{padding:24px;margin:24px 0}
+.more-section{padding:20px 0;border-top:1px solid var(--line)}
+.more-section h3{margin:0 0 7px;font-size:1.1rem}
+.more-description{color:var(--muted);font-size:.9rem;line-height:1.45;margin:6px 0 14px}
+.household-member-row{display:flex;align-items:center;gap:11px;padding:10px 0}
+.member-role{margin-left:auto;color:var(--muted);font-size:.82rem}
+.invite-code-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:15px;margin:12px 0}
+.invite-code-value{font-size:1.1rem;font-weight:800;letter-spacing:.12em;overflow-wrap:anywhere}
+.invite-section>.primary-button{width:100%;min-height:48px;margin-top:4px}
+.more-section label{display:block;font-size:.9rem;font-weight:650;margin:10px 0}
+.more-section select{width:100%;min-height:46px;border-radius:12px;padding:0 12px;background:var(--panel);color:var(--text);border:1px solid var(--line)}
+#moreSignOut{margin-top:18px}

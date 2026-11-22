@@ -77,6 +77,17 @@
         <div id="activity" class="activity-list"></div>
       </section>
 
+
+      <section id="morePanel" class="more-panel panel hidden">
+        <div class="section-heading"><div><span class="section-icon">•••</span><h2>More</h2></div></div>
+        <section class="more-section"><h3>Our household</h3><p class="more-description">Manage who has access to your shared shopping list.</p><div id="householdMembers" class="household-members"></div></section>
+        <section class="more-section invite-section"><h3>Invite your partner</h3><p class="more-description">Share this private code with your partner so they can join your household.</p>
+          <div class="invite-code-card"><span id="inviteCodeDisplay" class="invite-code-value">Loading…</span><button id="copyInviteCode" class="secondary-button" type="button">Copy code</button></div>
+          <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
+        <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
+          <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
+      </section>
+
       <button id="shareButton" class="share-button"><span class="send-icon">➤</span><span id="shareLabel">Share with Beth</span></button>
       <p class="share-hint" id="shareHint">Your changes save automatically. Share only when you're ready.</p>
     </main>
