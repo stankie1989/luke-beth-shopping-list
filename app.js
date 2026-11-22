@@ -5,7 +5,7 @@ const $=s=>document.querySelector(s);
 const state={user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
-function msg(id,s,error=false){const e=$(id);e.textContent=s;e.classList.toggle("error",error);}
+function msg(id,s,error=false){const e=$(id);if(!e){console.warn("Missing message element:",id);return;}e.textContent=s;e.classList.toggle("error",error);}
 function busy(b,v,label){if(!b)return;if(v){b.dataset.old=b.textContent;b.textContent=label;b.disabled=true;}else{b.textContent=b.dataset.old||b.textContent;b.disabled=false;delete b.dataset.old;}}
 function theme(){let t=state.theme;if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;$("#themeSelect").value=state.theme;$("#themeButton").textContent=t==="dark"?"☼":"☾";}
 function loggedOut(){ $("#appShell").classList.add("logged-out");$("#authPanel").classList.remove("hidden");$("#householdPanel").classList.add("hidden");}
@@ -76,10 +76,10 @@ async function removeItem(item){
 }
 function activityDescription(a){
  const d=a.details&&typeof a.details==="object"?a.details:{};
+ const item=`"${a.item_name||d.new_name||d.old_name||"an item"}"`;
  const changes=[];
  if(d.old_name!=null&&d.new_name!=null&&d.old_name!==d.new_name)changes.push(`renamed "${d.old_name}" to "${d.new_name}"`);
- if(d.old_quantity!=null&&d.new_quantity!=null&&d.old_quantity!==d.new_quantity)changes.push(`changed quantity from ${d.old_quantity} to ${d.new_quantity}`);
- const item=`"${a.item_name}"`;
+ if(d.old_quantity!=null&&d.new_quantity!=null&&d.old_quantity!==d.new_quantity)changes.push(`changed quantity for ${item} from ${d.old_quantity} to ${d.new_quantity}`);
  const verb={added:`added ${item}`,bought:`ticked off ${item}`,unbought:`unticked ${item}`,removed:`removed ${item}`};
  if(a.event_type==="added"&&d.new_quantity!=null&&d.new_quantity!==1)return `added ${item} (quantity ${d.new_quantity})`;
  if(a.event_type==="bought"||a.event_type==="unbought"){
