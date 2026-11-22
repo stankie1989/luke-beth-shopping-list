@@ -49,3 +49,8 @@ button:disabled{opacity:.55;cursor:wait}
 .app-version{text-align:center;color:var(--muted);font-size:.75rem;padding:18px 0 8px}
 
 .auth-name-field{display:flex;flex-direction:column;gap:9px}
+
+/* Newly added items: shared green dot remains for 24 hours after creation */
+.item-name.is-new::after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;vertical-align:middle;border-radius:50%;background:#35df91;box-shadow:0 0 9px #35df9180}
+.tab-panel{margin-top:0}
+#notificationsPanel{padding:18px;margin-top:14px}

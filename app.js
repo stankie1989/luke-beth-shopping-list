@@ -27,7 +27,13 @@ function renderItems(){
  state.items.forEach(item=>{
   const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"");
   const c=document.createElement("input");c.type="checkbox";c.className="check";c.checked=!!item.is_bought;c.setAttribute("aria-label",`Mark ${item.name} as ${item.is_bought?"not bought":"bought"}`);c.addEventListener("change",()=>update(item,{is_bought:c.checked}));
-  const n=document.createElement("button");n.type="button";n.className="item-name";n.textContent=item.name;n.title="Tap to edit item name";n.addEventListener("click",async()=>{const value=prompt("Edit item name:",item.name);if(value===null)return;const name=value.trim();if(!name)return toast("Item name can't be empty.");if(name===item.name)return;await update(item,{name:name.slice(0,80)});});
+  const n=document.createElement("button");n.type="button";n.className="item-name";n.textContent=item.name;
+  const addedAt=item.created_at?new Date(item.created_at).getTime():0;
+  const isNew=Number.isFinite(addedAt)&&addedAt>0&&(Date.now()-addedAt)<24*60*60*1000;
+  n.classList.toggle("is-new",isNew);
+  n.setAttribute("aria-label",isNew?`${item.name}, newly added`:item.name);
+  n.title=isNew?"Added in the last 24 hours · Tap to edit":"Tap to edit item name";
+  n.addEventListener("click",async()=>{const value=prompt("Edit item name:",item.name);if(value===null)return;const name=value.trim();if(!name)return toast("Item name can't be empty.");if(name===item.name)return;await update(item,{name:name.slice(0,80)});});
   const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.type="button";m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const plus=document.createElement("button");plus.type="button";plus.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});plus.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,plus);
   const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>removeItem(item);
   row.append(c,n,q,del);host.append(row);
@@ -127,9 +133,19 @@ function wire(){
  $("#shareInvite").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");const text=`Join my Luke & Beth shopping list! Open https://stankie1989.github.io/luke-beth-shopping-list/ and enter this invitation code: ${code}`;if(navigator.share){try{await navigator.share({title:"Luke & Beth’s Shopping List",text});}catch(e){if(e.name!=="AbortError")toast("Couldn't open sharing.");}}else{try{await navigator.clipboard.writeText(text);toast("Invitation copied — paste it into a message to Beth.");}catch(e){$("#inviteStatus").textContent=text;}}};
  $("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#moreSignOut").onclick=signOut;
- document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));b.classList.add("active");const more=b.dataset.tab==="more";$("#morePanel").classList.toggle("hidden",!more);$("#shareButton").classList.toggle("hidden",more);$("#shareHint").classList.toggle("hidden",more);if(b.dataset.tab!=="list"&&!more)toast("That section is planned for a later update.");});
+ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
+  const tab=b.dataset.tab;
+  document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===b));
+  $("#morePanel").classList.toggle("hidden",tab!=="more");
+  $("#historyPanel").classList.toggle("hidden",tab!=="history");
+  $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
+  $("#shareButton").classList.toggle("hidden",tab!=="list");
+  $("#shareHint").classList.toggle("hidden",tab!=="list");
+  $(".list-panel").classList.toggle("hidden",tab!=="list");
+  $(".people-strip").classList.toggle("hidden",tab==="more");
+ });
 }
-async function init(){theme();wire();const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   const hadController=!!navigator.serviceWorker.controller;
   if(hadController)navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
   navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
