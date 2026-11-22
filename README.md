@@ -52,3 +52,19 @@ Recommended production architecture:
 
 ## Deployment
 The static prototype can be hosted on GitHub Pages, Netlify or another HTTPS static host. Real cross-device sync and push notifications require the backend and secure push configuration described above.
+
+
+## Supabase-connected build
+
+This build uses the Supabase project URL and public publishable key in the browser. Never put a Supabase secret/service-role key or database password in this repository.
+
+### Deploy
+1. Replace the files in the GitHub repository with the contents of this ZIP.
+2. Commit the changes to `main`.
+3. Open the GitHub Pages site and create your account with your own email.
+4. Confirm your email if requested, then sign in.
+5. Luke creates the household and privately sends Beth the invite code.
+6. Beth creates her own account and joins with that code.
+
+### Current scope
+Account sign-in, private household membership, shared shopping items, activity feed and live database updates are included. Push notifications are not configured yet. The share action currently creates an in-app share event.

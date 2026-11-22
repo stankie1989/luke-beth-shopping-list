@@ -11,7 +11,31 @@
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell logged-out" id="appShell">
+    <section class="auth-panel panel" id="authPanel">
+      <div class="auth-mark">🛒</div><div class="eyebrow">LUKE & BETH'S</div>
+      <h1>Your shared shopping list</h1><p class="auth-intro">Sign in to keep your list in sync across both phones.</p>
+      <form id="authForm" class="auth-form">
+        <label for="authName">Your name</label><input id="authName" maxlength="40" placeholder="Luke or Beth" required>
+        <label for="authEmail">Email address</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+        <label for="authPassword">Password</label><input id="authPassword" type="password" minlength="8" placeholder="At least 8 characters" required>
+        <button class="primary-button" id="authSubmit" type="submit">Sign in</button>
+      </form>
+      <button class="text-button auth-toggle" id="authModeToggle" type="button">New here? Create an account</button>
+      <p class="auth-message" id="authMessage" role="status"></p>
+      <p class="modal-note">Use your own email address and password. Never share your password.</p>
+    </section>
+    <section class="setup-panel panel hidden" id="householdPanel">
+      <div class="eyebrow">ONE LAST STEP</div><h1>Connect your household</h1>
+      <p class="auth-intro">Create the private list, or join the list your partner has created.</p>
+      <button class="primary-button" id="createHousehold" type="button">Create our shopping list</button>
+      <div class="join-household-box"><label for="inviteCode">Already have an invite code?</label>
+        <input id="inviteCode" maxlength="12" placeholder="Enter invite code">
+        <button class="secondary-button" id="joinHousehold" type="button">Join household</button>
+      </div>
+      <p class="auth-message" id="setupMessage" role="status"></p>
+      <button class="text-button" id="signOutSetup" type="button">Sign out</button>
+    </section>
     <header class="topbar">
       <div class="brand">
         <div class="brand-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 11.1a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 1.9-1.4L22 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg></div>
@@ -68,8 +92,8 @@
   <dialog id="settingsDialog" class="modal">
     <form method="dialog" class="modal-card">
       <div class="modal-title"><h2>Personal settings</h2><button class="icon-button close" aria-label="Close">×</button></div>
-      <label for="userSelect">I'm using this app as</label>
-      <select id="userSelect"><option value="Luke">Luke</option><option value="Beth">Beth</option></select>
+      <p id="accountLabel" class="modal-note">Signed in</p>
+      <button class="text-button" id="signOutButton" type="button">Sign out</button>
       <label for="themeSelect">My theme</label>
       <select id="themeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select>
       <p class="modal-note">Your theme preference is saved on this device. It won't change the other person's theme.</p>
@@ -82,11 +106,12 @@
       <div class="modal-title"><h2>Ready to share?</h2><button class="icon-button close" aria-label="Close">×</button></div>
       <p id="shareMessage">This will notify Beth that you've shared the shopping list.</p>
       <div class="modal-actions"><button class="secondary-button" value="cancel">Not yet</button><button class="primary-button" id="confirmShare" value="confirm">Share list</button></div>
-      <p class="modal-note">Prototype mode: this preview records the action on this device only. Real cross-phone sharing and push notifications will be connected in the next build stage.</p>
+      <p class="modal-note">This sends an in-app share notification to your partner. Ordinary list edits sync silently.</p>
     </form>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js"></script>
 </body>
 </html>
