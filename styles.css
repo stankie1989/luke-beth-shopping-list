@@ -82,12 +82,19 @@ button:disabled{opacity:.55;cursor:wait}
  .manage-list-actions .secondary-button{font-size:14px;flex:1;padding:10px 9px}
  .manage-list-actions .delete-item{flex:0 0 42px}
 }
-.update-banner{position:fixed;z-index:1000;left:14px;right:14px;bottom:calc(82px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;padding:15px;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 40px #0008;display:flex;align-items:center;gap:12px}
+.update-banner{position:fixed;z-index:1000;left:14px;right:14px;bottom:calc(94px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;padding:18px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 44px #000b;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"copy copy" "action close";align-items:center;gap:12px;opacity:1}
 .update-banner[hidden]{display:none}
-.update-copy{flex:1;min-width:0}
-.update-copy strong{display:block;font-size:15px}
-.update-copy span{display:block;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.35}
-.update-banner button{white-space:nowrap}
+.update-copy{grid-area:copy;min-width:0;width:100%;overflow-wrap:anywhere}
+.update-copy strong{display:block;font-size:18px;line-height:1.25}
+.update-copy span{display:block;color:var(--muted);font-size:14px;margin-top:5px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+#applyUpdate{grid-area:action;width:100%;min-width:0}
+#dismissUpdate{grid-area:close;flex:0 0 auto;width:44px;height:44px}
+.update-banner button{white-space:normal}
+@media(min-width:520px){
+ .update-banner{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"copy action close"}
+ .update-copy strong{font-size:17px}
+ .update-copy span{font-size:13px}
+}
 
 /* v1.5.4: clearer Manage Lists explanation */
 .manage-lists-intro{font-size:22px;line-height:1.4;margin:16px 0 20px}
