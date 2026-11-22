@@ -165,7 +165,7 @@ function renderListStatus(){
  card.className="list-status-card";approval.classList.add("hidden");
  const shareButton=$("#shareButton"),shareHint=$("#shareHint");
  if(currentList()&&!currentList().is_shared){card.classList.add("hidden");if(shareButton)shareButton.classList.remove("hidden");if(shareHint)shareHint.classList.remove("hidden");return;}
- const allItemsBought=state.items.length>0&&state.items.every(item=>item.is_bought);
+ const allItemsBought=state.items.every(item=>item.is_bought);
  if(shareButton)shareButton.classList.toggle("hidden",allItemsBought);
  if(shareHint)shareHint.classList.toggle("hidden",allItemsBought);
  let symbol="↗",title="Ready to share",text=partner?`Share the latest list with ${partner.display_name} for approval.`:"Invite your partner to join your household first.",kind="status-neutral";

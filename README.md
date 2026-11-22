@@ -1,4 +1,4 @@
-# Luke & Beth's Shopping List — Version 1.5.13
+# Luke & Beth's Shopping List — Version 1.5.14
 
 ## iPhone improvements
 - Added an Apple Touch Icon so iPhone home-screen installation uses the shopping trolley app artwork instead of a generic initial.
