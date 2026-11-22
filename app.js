@@ -2,6 +2,7 @@ const SUPABASE_URL="https://vzyllteamuhvbgmoyfgr.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
+let waitingWorker=null;
 const state={user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
@@ -211,6 +212,8 @@ function updateAuthMode(){
  $("#authPassword").autocomplete=signingUp?"new-password":"current-password";
 }
 function wire(){
+ $("#applyUpdate").onclick=()=>{if(waitingWorker){waitingWorker.postMessage({type:"SKIP_WAITING"});$("#applyUpdate").disabled=true;$("#applyUpdate").textContent="Updating…";}};
+ $("#dismissUpdate").onclick=()=>$("#updateBanner").hidden=true;
  $("#authForm").onsubmit=auth;updateAuthMode();
  $("#listSelector").onchange=e=>switchList(e.target.value);$("#newListButton").onclick=createList;$("#manageCreateList").onclick=()=>{createList();};$("#manageListsButton").onclick=()=>$("#manageListsDialog").showModal();$("#closeManageLists").onclick=()=>$("#manageListsDialog").close();
  $("#authModeToggle").onclick=()=>{state.authMode=state.authMode==="signin"?"signup":"signin";updateAuthMode();msg("#authMessage","");};
@@ -241,8 +244,20 @@ function wire(){
  });
 }
 async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"){refreshActivity();refreshListStatus();}},5000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
-  const hadController=!!navigator.serviceWorker.controller;
-  if(hadController)navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
-  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
+  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>{
+   const showUpdate=worker=>{waitingWorker=worker;$("#updateBanner").hidden=false;};
+   if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);
+   reg.addEventListener("updatefound",()=>{
+    const installing=reg.installing;
+    if(!installing)return;
+    installing.addEventListener("statechange",()=>{
+     if(installing.state==="installed"&&navigator.serviceWorker.controller)showUpdate(installing);
+    });
+   });
+   reg.update().catch(()=>{});
+   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reg.update().catch(()=>{});});
+  }).catch(()=>{});
  }}
 init();
