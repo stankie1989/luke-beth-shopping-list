@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=1.5.15">
+  <link rel="stylesheet" href="./styles.css?v=1.5.16">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -54,11 +54,11 @@
     </header>
 
     <div class="wave" aria-hidden="true"><span></span><span></span><span></span>
-      <section id="listStatusCard" class="list-status-card status-neutral top-status-card" aria-live="polite">
-        <span class="status-symbol" id="statusSymbol">↗</span>
-        <div class="status-copy"><strong id="statusTitle">Ready to share</strong><span id="statusText">Share the latest list with Beth for approval.</span></div>
-      </section>
     </div>
+    <section id="listStatusCard" class="list-status-card status-neutral top-status-card" aria-live="polite">
+      <span class="status-symbol" id="statusSymbol">↗</span>
+      <div class="status-copy"><strong id="statusTitle">Ready to share</strong><span id="statusText">Share the latest list with Beth for approval.</span></div>
+    </section>
 
     <main>
       <section class="people-strip panel">
@@ -112,7 +112,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.5.15</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.5.16</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -166,6 +166,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.5.15"></script>
+  <script src="./app.js?v=1.5.16"></script>
 </body>
 </html>

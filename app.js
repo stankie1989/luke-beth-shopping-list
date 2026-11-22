@@ -291,8 +291,11 @@ async function init(){theme();wire();setInterval(()=>{if(state.items.length)rend
      if(installing.state==="installed"&&navigator.serviceWorker.controller)showUpdate(installing);
     });
    });
-   reg.update().catch(()=>{});
-   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reg.update().catch(()=>{});});
+   const checkForAppUpdate=()=>reg.update().catch(()=>{});
+   checkForAppUpdate();
+   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkForAppUpdate();});
+   window.addEventListener("pageshow",checkForAppUpdate);
+   window.setInterval(checkForAppUpdate,60*60*1000);
   }).catch(()=>{});
  }}
 init();
