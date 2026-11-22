@@ -170,3 +170,11 @@ input,select,textarea{font-size:16px}
 .shopping-mode-footer .add-submit{min-height:52px;padding:0 20px;white-space:nowrap}
 @media(max-width:380px){.shopping-mode-item{gap:12px;padding:15px 4px}.shopping-mode-item-name{font-size:19px}.shopping-mode-footer .add-submit{padding:0 13px;font-size:14px}}
 .app-shell.shopping-mode-active{overflow:visible}
+
+/* 1.5.15: place household list status in the header wave area */
+.wave{height:72px;overflow:visible;z-index:2}
+.wave .top-status-card{position:absolute;z-index:3;left:20px;right:20px;top:4px;margin:0;padding:9px 12px;min-height:54px;gap:10px;border-radius:16px;box-shadow:0 7px 18px #0003}
+.wave .top-status-card .status-symbol{width:30px;height:30px;font-size:16px}
+.wave .top-status-card .status-copy{gap:1px}
+.wave .top-status-card .status-copy strong{font-size:13px;line-height:1.2}
+.wave .top-status-card .status-copy span{font-size:10px;line-height:1.25}
