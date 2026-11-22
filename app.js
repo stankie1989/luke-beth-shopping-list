@@ -6,20 +6,28 @@ let waitingWorker=null;
 const state={user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
+function appNotice(title,body){
+ toast(body);
+ if(!("Notification" in window)||Notification.permission!=="granted"||document.visibilityState!=="visible")return;
+ const options={body,icon:"./icon-192.png",badge:"./icon-192.png",tag:"luke-beth-share"};
+ if("serviceWorker" in navigator){navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,options)).catch(e=>console.warn("Browser notification unavailable",e));}
+ else{try{new Notification(title,options);}catch(e){console.warn("Browser notification unavailable",e);}}
+}
 function msg(id,s,error=false){const e=$(id);if(!e){console.warn("Missing message element:",id);return;}e.textContent=s;e.classList.toggle("error",error);}
 function busy(b,v,label){if(!b)return;if(v){b.dataset.old=b.textContent;b.textContent=label;b.disabled=true;}else{b.textContent=b.dataset.old||b.textContent;b.disabled=false;delete b.dataset.old;}}
 function applyListStatusTheme(){
  const card=$("#listStatusCard");if(!card)return;
  const title=$("#statusTitle"),text=$("#statusText"),symbol=$("#statusSymbol");
  const light=document.documentElement.dataset.theme==="light";
- const neutral=card.classList.contains("status-neutral");
- if(!neutral){card.style.background="";card.style.borderColor="";card.style.color="";if(title)title.style.color="";if(text)text.style.color="";if(symbol){symbol.style.background="";symbol.style.color="";}return;}
- card.style.background=light?"linear-gradient(120deg,#eef2ff,#e7edff)":"linear-gradient(120deg,#18284a,#1b2041)";
- card.style.borderColor=light?"#cbd5f0":"#354c83";
- card.style.color=light?"#172044":"#f7f8ff";
- if(title)title.style.color=light?"#172044":"#f7f8ff";
- if(text)text.style.color=light?"#596684":"#a7b2d0";
- if(symbol){symbol.style.background=light?"#d5def7":"#26334f";symbol.style.color=light?"#26365f":"#dce6ff";}
+ const kind=["liked","awaiting","changed","neutral"].find(k=>card.classList.contains("status-"+k))||"neutral";
+ const palettes={
+  light:{neutral:["linear-gradient(120deg,#eef2ff,#e7edff)","#cbd5f0","#172044","#596684","#d5def7","#26365f"],liked:["linear-gradient(110deg,#e6f8ed,#d9f3e3)","#a9dfbd","#17452b","#416b50","#c7ecd3","#176238"],awaiting:["linear-gradient(110deg,#f0eaff,#e8defb)","#cbb9ef","#30204d","#65557f","#ddcff8","#5737a1"],changed:["linear-gradient(110deg,#fff2df,#ffe8c7)","#edc98f","#493017","#80603b","#f7d9a8","#704516"]},
+  dark:{neutral:["linear-gradient(120deg,#18284a,#1b2041)","#354c83","#f7f8ff","#a7b2d0","#26334f","#dce6ff"],liked:["linear-gradient(110deg,#103d2b,#12452d)","#168d4e","#f4fff7","#a9d8b8","#1eaa5e","#ffffff"],awaiting:["linear-gradient(110deg,#29204c,#211b43)","#8054d8","#faf7ff","#c9bce8","#7448d4","#ffffff"],changed:["linear-gradient(110deg,#49321b,#332719)","#a66b2d","#fff8ed","#d9bd99","#d99131","#211608"]}
+ };
+ const p=palettes[light?"light":"dark"][kind];
+ card.style.background=p[0];card.style.borderColor=p[1];card.style.color=p[2];
+ if(title)title.style.color=p[2];if(text)text.style.color=p[3];
+ if(symbol){symbol.style.background=p[4];symbol.style.color=p[5];}
 }
 function theme(){let t=state.theme;if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;$("#themeSelect").value=state.theme;$("#themeButton").textContent=t==="dark"?"☼":"☾";applyListStatusTheme();}
 function loggedOut(){ $("#appShell").classList.add("logged-out");$("#authPanel").classList.remove("hidden");$("#householdPanel").classList.add("hidden");}
@@ -44,14 +52,15 @@ function renderListControls(){
  if(current){selector.value=current.id;$("#activeListName").textContent=current.name;$("#activeListVisibility").textContent=current.is_shared?"Shared":"Private";$("#activeListVisibility").className=current.is_shared?"shared-pill":"private-pill";$("#listHeadingTitle").textContent=current.name;$("#shareButton").classList.toggle("hidden",!current.is_shared);$("#shareHint").classList.toggle("hidden",!current.is_shared);$("#listStatusCard").classList.toggle("hidden",!current.is_shared);$("#approvalCard").classList.toggle("hidden",!current.is_shared||state.approvalDismissed);$("#listHeadingDescription").textContent=current.is_shared?"Shared with your household":"Only visible to you";}
  const host=$("#manageLists");if(host){host.innerHTML="";state.lists.forEach(list=>{const row=document.createElement("div");row.className="manage-list-row";const info=document.createElement("div");info.className="manage-list-info";const title=document.createElement("strong");title.textContent=`${list.icon||"🛒"} ${list.name}`;const sub=document.createElement("span");sub.textContent=list.is_shared?"Shared with household":"Private to you";info.append(title,sub);const actions=document.createElement("div");actions.className="manage-list-actions";if(list.owner_id===state.user.id){const toggle=document.createElement("button");toggle.className="secondary-button compact";toggle.textContent=list.is_shared?"Make private":"Make shared";toggle.onclick=()=>changeListVisibility(list);const rename=document.createElement("button");rename.className="secondary-button compact";rename.textContent="Rename";rename.onclick=()=>renameList(list);const del=document.createElement("button");del.className="delete-item";del.textContent="×";del.title="Delete list";del.onclick=()=>deleteList(list);actions.append(toggle,rename,del);}row.append(info,actions);host.append(row);});}
 }
+let listRefreshRunning=false;
 async function refreshCurrentList(){
- if(!state.currentListId)return;
+ if(!state.currentListId||listRefreshRunning)return;listRefreshRunning=true;
  const [{data:items,error},{data:activity}] = await Promise.all([
   db.from("shopping_items").select("*").eq("household_id",state.householdId).eq("list_id",state.currentListId).order("created_at"),
   db.from("activity_events").select("*").eq("household_id",state.householdId).eq("list_id",state.currentListId).order("created_at",{ascending:false}).limit(12)
  ]);
- if(error){toast("Couldn't load this list: "+error.message);return;}
- state.items=items||[];state.activity=(activity||[]).map(x=>({...x,display_name:state.members.find(m=>m.user_id===x.actor_id)?.display_name||"Household member"}));renderItems();renderActivity();
+ if(error){listRefreshRunning=false;toast("Couldn't load this list: "+error.message);return;}
+ state.items=items||[];state.activity=(activity||[]).map(x=>({...x,display_name:state.members.find(m=>m.user_id===x.actor_id)?.display_name||"Household member"}));renderItems();renderActivity();listRefreshRunning=false;
 }
 async function switchList(id){if(!state.lists.some(x=>x.id===id))return;state.currentListId=id;localStorage.setItem(`lb-current-list-${state.householdId}`,id);renderListControls();await refreshCurrentList();}
 async function createList(){const name=prompt("Name your new list:");if(name===null)return;const clean=name.trim();if(!clean)return toast("Please enter a list name.");const shared=confirm("Make this list shared with your household?\n\nChoose Cancel to keep it private.");const {data,error}=await db.from("shopping_lists").insert({household_id:state.householdId,owner_id:state.user.id,name:clean.slice(0,40),icon:"🛒",is_shared:shared}).select("*").single();if(error)return toast("Couldn't create list: "+error.message);state.lists.push(data);await switchList(data.id);toast(`${data.name} created as ${shared?"a shared":"a private"} list.`);}
@@ -205,9 +214,9 @@ function subscribe(){
  .on("postgres_changes",{event:"*",schema:"public",table:"shopping_lists",filter:`household_id=eq.${state.householdId}`},async()=>{const {data}=await db.from("shopping_lists").select("*").eq("household_id",state.householdId).order("created_at");if(data){state.lists=data;if(!state.lists.some(x=>x.id===state.currentListId))state.currentListId=state.lists.find(x=>x.is_shared)?.id||state.lists[0]?.id;renderListControls();await refreshCurrentList();}})
  .on("postgres_changes",{event:"*",schema:"public",table:"shopping_items",filter:`household_id=eq.${state.householdId}`},async()=>{await refreshCurrentList();await refreshListStatus();})
  .on("postgres_changes",{event:"*",schema:"public",table:"activity_events",filter:`household_id=eq.${state.householdId}`},async()=>{const {data}=await db.from("activity_events").select("*").eq("household_id",state.householdId).eq("list_id",state.currentListId).order("created_at",{ascending:false}).limit(12);const {data:ms}=await db.from("household_members").select("user_id,display_name").eq("household_id",state.householdId);const names=Object.fromEntries((ms||[]).map(x=>[x.user_id,x.display_name]));state.activity=(data||[]).map(x=>({...x,display_name:names[x.actor_id]||"Household member"}));renderActivity();})
- .on("postgres_changes",{event:"INSERT",schema:"public",table:"share_events",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new.recipient_id===state.user.id)toast("Your partner shared the shopping list.");})
+ .on("postgres_changes",{event:"INSERT",schema:"public",table:"share_events",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new.recipient_id===state.user.id)appNotice("Luke & Beth Shopping List","Your partner shared the shopping list.");})
  .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_state",filter:`household_id=eq.${state.householdId}`},()=>refreshListStatus())
- .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_shares",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new?.recipient_id===state.user.id){state.approvalDismissed=false;toast(`${state.members.find(m=>m.user_id===payload.new.sender_id)?.display_name||"Your partner"} shared the shopping list.`);}refreshListStatus();})
+ .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_shares",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new?.recipient_id===state.user.id)state.approvalDismissed=false;refreshListStatus();})
  .on("postgres_changes",{event:"*",schema:"public",table:"shopping_list_approvals",filter:`household_id=eq.${state.householdId}`},()=>refreshListStatus())
  .subscribe(async status=>{if(status==="SUBSCRIBED"){await setEditing(false);$("#syncLabel").textContent="Live sync connected";}});
 }
@@ -256,7 +265,7 @@ function wire(){
   if(tab==="history")refreshActivity();
  });
 }
-async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"){refreshActivity();refreshListStatus();}},5000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
   navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>{
