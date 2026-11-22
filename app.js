@@ -3,7 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
-const state={menuEntries:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={menuEntries:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -80,9 +80,7 @@ function buildItemRow(item,shopping=false){
  return row;
 }
 
-const MEAL_IMAGES=[
- ["dinner","🍽️","Dinner plate"],["pasta","🍝","Pasta"],["pizza","🍕","Pizza"],["burger","🍔","Burger"],["curry","🍛","Curry"],["roast","🍗","Roast dinner"],["salad","🥗","Salad"],["fish","🐟","Fish"],["soup","🍲","Soup"],["tacos","🌮","Tacos"],["sandwich","🥪","Sandwich"],["breakfast","🍳","Breakfast"],["pancakes","🥞","Pancakes"],["rice","🍚","Rice"],["vegetables","🥦","Vegetables"],["noodles","🍜","Noodles"]
-];
+const MEAL_IMAGES=[["dinner", "🍽️", "Dinner plate"], ["pasta", "🍝", "Pasta"], ["pizza", "🍕", "Pizza"], ["burger", "🍔", "Burger"], ["curry", "🍛", "Curry"], ["roast", "🍗", "Roast chicken"], ["salad", "🥗", "Salad"], ["fish", "🐟", "Fish"], ["soup", "🍲", "Soup"], ["tacos", "🌮", "Tacos"], ["sandwich", "🥪", "Sandwich"], ["breakfast", "🍳", "Breakfast"], ["pancakes", "🥞", "Pancakes"], ["rice", "🍚", "Rice"], ["vegetables", "🥦", "Vegetables"], ["noodles", "🍜", "Noodles"], ["steak", "🥩", "Steak"], ["sausage", "🌭", "Hot dog"], ["bacon", "🥓", "Bacon"], ["egg", "🥚", "Eggs"], ["cheese", "🧀", "Cheese"], ["bread", "🍞", "Bread"], ["croissant", "🥐", "Croissant"], ["bagel", "🥯", "Bagel"], ["waffle", "🧇", "Waffles"], ["porridge", "🥣", "Porridge"], ["potato", "🥔", "Potatoes"], ["chips", "🍟", "Chips"], ["chicken", "🍗", "Chicken"], ["shrimp", "🍤", "Prawns"], ["crab", "🦀", "Crab"], ["sushi", "🍣", "Sushi"], ["bento", "🍱", "Bento"], ["dumplings", "🥟", "Dumplings"], ["springroll", "🥠", "Spring rolls"], ["burrito", "🌯", "Burrito"], ["flatbread", "🫓", "Flatbread"], ["pepper", "🫑", "Peppers"], ["carrot", "🥕", "Carrots"], ["corn", "🌽", "Sweetcorn"], ["tomato", "🍅", "Tomatoes"], ["mushroom", "🍄", "Mushrooms"], ["onion", "🧅", "Onions"], ["peas", "🫛", "Peas"], ["beans", "🫘", "Beans"], ["avocado", "🥑", "Avocado"], ["cucumber", "🥒", "Cucumber"], ["apple", "🍎", "Apple"], ["banana", "🍌", "Banana"], ["strawberry", "🍓", "Strawberries"], ["grapes", "🍇", "Grapes"], ["watermelon", "🍉", "Watermelon"], ["orange", "🍊", "Orange"], ["lemon", "🍋", "Lemon"], ["cherries", "🍒", "Cherries"], ["peach", "🍑", "Peach"], ["pineapple", "🍍", "Pineapple"], ["mango", "🥭", "Mango"], ["blueberries", "🫐", "Blueberries"], ["cake", "🍰", "Cake"], ["donut", "🍩", "Doughnut"], ["cookie", "🍪", "Cookie"], ["chocolate", "🍫", "Chocolate"], ["icecream", "🍨", "Ice cream"], ["cupcake", "🧁", "Cupcake"], ["pie", "🥧", "Pie"], ["honey", "🍯", "Honey"], ["milk", "🥛", "Milk"], ["coffee", "☕", "Coffee"], ["tea", "🍵", "Tea"], ["juice", "🧃", "Juice"], ["casserole", "🥘", "Casserole"], ["ramen", "🍜", "Ramen"], ["toast", "🍞", "Toast"]];
 function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
 function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 function dateLabel(s){return new Date(`${s}T12:00:00`).toLocaleDateString("en-GB",{day:"numeric",month:"short"});}
@@ -163,7 +161,11 @@ function openMealDialog(date,type,entry){
  $("#mealIngredients").value=(entry?.ingredients||[]).map(x=>`${x.name}${x.quantity&&x.quantity!=="1"?" x "+x.quantity:""}`).join("\n");
  $("#mealSaveFavourite").checked=false;$("#mealDialog").dataset.date=date;
  const host=$("#mealImageChoices");host.innerHTML="";
- MEAL_IMAGES.forEach(([key,emoji,label])=>{const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");b.textContent=emoji;b.title=label;b.setAttribute("aria-label",label);b.onclick=()=>{state.selectedMealImage=key;host.querySelectorAll("button").forEach(x=>x.classList.toggle("selected",x===b));};host.append(b);});
+ const search=document.createElement("input");search.type="search";search.id="mealIconSearch";search.placeholder="Search food icons…";search.className="meal-icon-search";search.setAttribute("aria-label","Search food illustrations");
+ const grid=document.createElement("div");grid.className="meal-icon-grid";
+ const more=document.createElement("button");more.type="button";more.className="secondary-button meal-icon-more";
+ function drawIcons(){const q=search.value.trim().toLowerCase(),matches=MEAL_IMAGES.filter(x=>x[2].toLowerCase().includes(q)||x[0].toLowerCase().includes(q));const shown=(state.mealIconsExpanded||q)?matches:matches.slice(0,18);grid.innerHTML="";shown.forEach(([key,emoji,label])=>{const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");b.textContent=emoji;b.title=label;b.setAttribute("aria-label",label);b.setAttribute("aria-pressed",String(key===state.selectedMealImage));b.onclick=()=>{state.selectedMealImage=key;drawIcons();};grid.append(b);});more.hidden=!!q||matches.length<=18;more.textContent=state.mealIconsExpanded?"Show fewer icons":`Show all ${matches.length} icons`;}
+ search.addEventListener("input",drawIcons);more.onclick=()=>{state.mealIconsExpanded=!state.mealIconsExpanded;drawIcons();};host.append(search,grid,more);drawIcons();
  $("#mealForm .meal-delete")?.remove();
  if(entry){const del=document.createElement("button");del.type="button";del.className="text-button meal-delete";del.textContent="Delete meal";del.onclick=async()=>{if(!confirm("Delete this meal from the menu?"))return;const {error}=await db.from("menu_entries").delete().eq("id",entry.id);if(error)return toast("Couldn't delete meal: "+error.message);state.menuEntries=state.menuEntries.filter(x=>x.id!==entry.id);$("#mealDialog").close();renderMenu();};$("#mealForm").append(del);}
  $("#mealDialog").showModal();
@@ -207,18 +209,17 @@ async function addMealIngredients(entry){
  const ingredients=entry.ingredients||[];if(!ingredients.length)return toast("No ingredients saved for this meal yet.");
  const {data:lists,error}=await db.from("shopping_lists").select("*").eq("household_id",state.householdId).order("created_at");
  if(error||!lists?.length)return toast("Couldn't load your shopping lists.");
- const choices=lists.map((x,i)=>`${i+1}. ${x.name}${x.is_shared?" (shared)":" (private)"}`).join("\n");
- const answer=prompt(`Add ingredients to which list?\n${choices}\nEnter a number:`,String(Math.max(1,lists.findIndex(x=>x.id===state.currentListId)+1)));
- const target=lists[Number(answer)-1];if(!target)return;
- for(const ing of ingredients){
-  const numeric=Number(ing.quantity);
-  const itemName=Number.isFinite(numeric)&&numeric>0?ing.name:`${ing.name} (${ing.quantity})`;
-  const addQty=Number.isFinite(numeric)&&numeric>0?Math.max(1,Math.round(numeric)):1;
-  const {data:existing}=await db.from("shopping_items").select("*").eq("list_id",target.id).ilike("name",itemName).maybeSingle();
-  if(existing){const {error:e}=await db.from("shopping_items").update({quantity:existing.quantity+addQty,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",existing.id);if(e)console.warn(e);}
-  else{const {error:e}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:target.id,name:itemName,quantity:addQty,is_bought:false,created_by:state.user.id,updated_by:state.user.id});if(e)console.warn(e);}
- }
- if(target.id===state.currentListId)await refreshCurrentList();toast(`Ingredients added to ${target.name}.`);
+ state.pendingMealIngredients=entry;state.selectedShoppingListId=state.currentListId||lists[0].id;
+ const host=$("#shoppingListChoices");host.innerHTML="";
+ lists.forEach(list=>{const b=document.createElement("button");b.type="button";b.className="shopping-list-choice"+(list.id===state.selectedShoppingListId?" selected":"");const icon=document.createElement("span");icon.className="shopping-list-choice-icon";icon.textContent=list.is_shared?"👥":"🔒";const info=document.createElement("span");info.className="shopping-list-choice-info";const name=document.createElement("strong");name.textContent=list.name;const desc=document.createElement("small");desc.textContent=list.is_shared?"Shared with your household":"Private list";info.append(name,desc);const tick=document.createElement("span");tick.className="shopping-list-choice-check";tick.textContent=list.id===state.selectedShoppingListId?"✓":"";b.append(icon,info,tick);b.onclick=()=>{state.selectedShoppingListId=list.id;host.querySelectorAll(".shopping-list-choice").forEach(x=>{const yes=x===b;x.classList.toggle("selected",yes);x.querySelector(".shopping-list-choice-check").textContent=yes?"✓":"";});$("#confirmListPicker").disabled=false;};host.append(b);});
+ $("#confirmListPicker").disabled=!state.selectedShoppingListId;$("#shoppingListPickerDialog").showModal();
+}
+async function confirmMealIngredients(){
+ const entry=state.pendingMealIngredients;if(!entry)return;const targetId=state.selectedShoppingListId;
+ const {data:target,error:targetError}=await db.from("shopping_lists").select("*").eq("id",targetId).single();if(targetError||!target)return toast("Couldn't find that shopping list.");
+ const btn=$("#confirmListPicker");btn.disabled=true;btn.textContent="Adding…";let failures=0;
+ for(const ing of entry.ingredients||[]){const numeric=Number(ing.quantity),itemName=Number.isFinite(numeric)&&numeric>0?ing.name:`${ing.name} (${ing.quantity})`,addQty=Number.isFinite(numeric)&&numeric>0?Math.max(1,Math.round(numeric)):1;const {data:existing,error:lookupError}=await db.from("shopping_items").select("*").eq("list_id",target.id).ilike("name",itemName).maybeSingle();if(lookupError){failures++;continue;}if(existing){const {error}=await db.from("shopping_items").update({quantity:existing.quantity+addQty,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",existing.id);if(error)failures++;}else{const {error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:target.id,name:itemName,quantity:addQty,is_bought:false,created_by:state.user.id,updated_by:state.user.id});if(error)failures++;}}
+ $("#shoppingListPickerDialog").close();btn.textContent="Add ingredients";btn.disabled=false;state.pendingMealIngredients=null;if(target.id===state.currentListId)await refreshCurrentList();toast(failures?`Added with ${failures} ingredient error(s).`:`Ingredients added to ${target.name}.`);
 }
 function renderItems(){
  const host=$("#items");host.innerHTML="";const modeHost=$("#shoppingModeItems");if(modeHost)modeHost.innerHTML="";
@@ -405,7 +406,7 @@ function wire(){
  $("#addOptionalMeal").onclick=()=>openDatePicker(localISO(new Date()),"breakfast","new");
  $("#menuFavourites").onclick=showFavourites;
  $("#mealForm").onsubmit=saveMeal;$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
- $("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;
+ $("#closeListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#cancelListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#confirmListPicker").onclick=confirmMealIngredients;$("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;
  $("#datePrevMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()-1);renderDatePicker();};
  $("#dateNextMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()+1);renderDatePicker();};
  $("#likeListButton").onclick=approveList;$("#dismissApproval").onclick=()=>{state.approvalDismissed=true;$("#approvalCard").classList.add("hidden");};
