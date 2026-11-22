@@ -132,3 +132,14 @@ html[data-theme="light"] #listStatusCard.status-neutral .status-symbol{
   background:#d5def7!important;
   color:#26365f!important;
 }
+
+/* iPhone/PWA viewport and horizontal overflow safeguards */
+html{width:100%;max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{width:100%;max-width:100%;overflow-x:clip}
+.app-shell{width:100%;min-width:0;max-width:650px}
+main,.panel,.tab-panel,.more-panel{min-width:0;max-width:100%}
+img,svg,video,canvas{max-width:100%}
+input,select,textarea,button{max-width:100%}
+/* iOS Safari zooms focused form fields smaller than 16px; keep readable size */
+input,select,textarea{font-size:16px}
+@media(max-width:380px){.app-shell{padding-left:14px;padding-right:14px}.list-switcher{gap:5px}.list-switcher select{padding-left:7px;padding-right:7px}.compact{padding-left:8px;padding-right:8px}.item{grid-template-columns:24px minmax(0,1fr) auto 22px;gap:6px}.qty{gap:5px}}
