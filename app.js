@@ -163,9 +163,14 @@ function renderListStatus(){
  const card=$("#listStatusCard"),approval=$("#approvalCard");if(!card||!approval)return;
  const version=state.listStatus?.list_version??1,share=state.latestShare,partner=state.partner;
  card.className="list-status-card";approval.classList.add("hidden");
- if(currentList()&&!currentList().is_shared){card.classList.add("hidden");return;}
+ const shareButton=$("#shareButton"),shareHint=$("#shareHint");
+ if(currentList()&&!currentList().is_shared){card.classList.add("hidden");if(shareButton)shareButton.classList.remove("hidden");if(shareHint)shareHint.classList.remove("hidden");return;}
+ const allItemsBought=state.items.length>0&&state.items.every(item=>item.is_bought);
+ if(shareButton)shareButton.classList.toggle("hidden",allItemsBought);
+ if(shareHint)shareHint.classList.toggle("hidden",allItemsBought);
  let symbol="↗",title="Ready to share",text=partner?`Share the latest list with ${partner.display_name} for approval.`:"Invite your partner to join your household first.",kind="status-neutral";
- if(share&&Number(share.list_version)<Number(version)){
+ if(allItemsBought){kind="status-liked";symbol="✓";title="All done!";text="You're up to date. Nothing left to buy.";} 
+ else if(share&&Number(share.list_version)<Number(version)){
   kind="status-changed";symbol="◷";title="Changes made";text=`Share with ${partner?.display_name||"your partner"} for a new like.`;
  }else if(share&&Number(share.list_version)===Number(version)){
   if(state.latestApproval){kind="status-liked";symbol="👍";title=share.recipient_id===state.user?.id?"You have liked the list ✓":`${state.partner?.display_name||"Your partner"} has liked the list ✓`;text=share.recipient_id===state.user?.id?`You're up to date with ${state.members.find(m=>m.user_id===share.sender_id)?.display_name||"your partner"}.`:"You're both up to date.";}
