@@ -53,12 +53,19 @@ async function removeItem(item){
  if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else toast("Item deleted.");
 }
 function activityDescription(a){
- if(a.details)return a.details;
- if(a.change_details)return a.change_details;
- if(a.event_type==="updated"&&a.old_quantity!=null&&a.new_quantity!=null&&a.old_quantity!==a.new_quantity)return `changed "${a.item_name}" quantity from ${a.old_quantity} to ${a.new_quantity}`;
- if(a.event_type==="updated"&&a.old_name&&a.new_name&&a.old_name!==a.new_name)return `renamed "${a.old_name}" to "${a.new_name}"`;
- const verb={added:"added",updated:"updated",bought:"ticked off",unbought:"unticked",removed:"removed"}[a.event_type]||"changed";
- return `${verb} "${a.item_name}"`;
+ const d=a.details&&typeof a.details==="object"?a.details:{};
+ const changes=[];
+ if(d.old_name!=null&&d.new_name!=null&&d.old_name!==d.new_name)changes.push(`renamed "${d.old_name}" to "${d.new_name}"`);
+ if(d.old_quantity!=null&&d.new_quantity!=null&&d.old_quantity!==d.new_quantity)changes.push(`changed quantity from ${d.old_quantity} to ${d.new_quantity}`);
+ const item=`"${a.item_name}"`;
+ const verb={added:`added ${item}`,bought:`ticked off ${item}`,unbought:`unticked ${item}`,removed:`removed ${item}`};
+ if(a.event_type==="added"&&d.new_quantity!=null&&d.new_quantity!==1)return `added ${item} (quantity ${d.new_quantity})`;
+ if(a.event_type==="bought"||a.event_type==="unbought"){
+  const action=verb[a.event_type];
+  return changes.length?`${action}; ${changes.join(" and ")}`:action;
+ }
+ if(changes.length)return changes.join(" and ");
+ return verb[a.event_type]||`updated ${item}`;
 }
 function renderActivity(){const host=$("#activity");host.innerHTML="";state.activity.slice(0,12).forEach(a=>{const row=document.createElement("div");row.className="activity-row";const av=document.createElement("span");av.className="activity-avatar";av.textContent=(a.display_name||"?")[0];const cp=document.createElement("span");cp.className="activity-copy";const b=document.createElement("strong");b.textContent=(a.display_name||"Someone")+" ";cp.append(b,document.createTextNode(activityDescription(a)));const tm=document.createElement("span");tm.className="activity-time";tm.textContent=new Date(a.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});row.append(av,cp,tm);host.append(row);});if(!state.activity.length)host.textContent="Your list activity will appear here.";}
 async function load(){
