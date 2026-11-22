@@ -1,9 +1,10 @@
-# Luke & Beth's Shopping List — Version 1.5.8
+# Luke & Beth's Shopping List — Version 1.5.9
 
 ## Fix
-- Applied a more specific light-theme contrast rule directly to the Ready to share status card.
-- Explicitly styles the card background, title, description and icon using high-specificity selectors and `!important` so generic status styles cannot override them.
-- Dark theme remains unchanged.
+- Replaced the fragile CSS-only Ready to share contrast correction with runtime theme styling.
+- The app now explicitly sets the neutral share card background, border, heading, description and icon colours based on the active app theme.
+- Theme changes reapply the correct colours immediately.
+- This avoids dependence on CSS selector specificity or stylesheet cascade order.
 
 ## Deployment
 Replace the nine app files in GitHub with these files and commit to `main`.

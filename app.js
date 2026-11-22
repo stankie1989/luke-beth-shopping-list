@@ -8,7 +8,20 @@ let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function msg(id,s,error=false){const e=$(id);if(!e){console.warn("Missing message element:",id);return;}e.textContent=s;e.classList.toggle("error",error);}
 function busy(b,v,label){if(!b)return;if(v){b.dataset.old=b.textContent;b.textContent=label;b.disabled=true;}else{b.textContent=b.dataset.old||b.textContent;b.disabled=false;delete b.dataset.old;}}
-function theme(){let t=state.theme;if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;$("#themeSelect").value=state.theme;$("#themeButton").textContent=t==="dark"?"☼":"☾";}
+function applyListStatusTheme(){
+ const card=$("#listStatusCard");if(!card)return;
+ const title=$("#statusTitle"),text=$("#statusText"),symbol=$("#statusSymbol");
+ const light=document.documentElement.dataset.theme==="light";
+ const neutral=card.classList.contains("status-neutral");
+ if(!neutral){card.style.background="";card.style.borderColor="";card.style.color="";if(title)title.style.color="";if(text)text.style.color="";if(symbol){symbol.style.background="";symbol.style.color="";}return;}
+ card.style.background=light?"linear-gradient(120deg,#eef2ff,#e7edff)":"linear-gradient(120deg,#18284a,#1b2041)";
+ card.style.borderColor=light?"#cbd5f0":"#354c83";
+ card.style.color=light?"#172044":"#f7f8ff";
+ if(title)title.style.color=light?"#172044":"#f7f8ff";
+ if(text)text.style.color=light?"#596684":"#a7b2d0";
+ if(symbol){symbol.style.background=light?"#d5def7":"#26334f";symbol.style.color=light?"#26365f":"#dce6ff";}
+}
+function theme(){let t=state.theme;if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;$("#themeSelect").value=state.theme;$("#themeButton").textContent=t==="dark"?"☼":"☾";applyListStatusTheme();}
 function loggedOut(){ $("#appShell").classList.add("logged-out");$("#authPanel").classList.remove("hidden");$("#householdPanel").classList.add("hidden");}
 function setup(){ $("#appShell").classList.add("logged-out");$("#authPanel").classList.add("hidden");$("#householdPanel").classList.remove("hidden");}
 function showApp(){
@@ -144,7 +157,7 @@ function renderListStatus(){
    if(!state.approvalDismissed){approval.classList.remove("hidden");$("#approvalTitle").textContent=`${state.members.find(m=>m.user_id===share.sender_id)?.display_name||"Your partner"} shared the list`;$("#approvalText").textContent="Review the changes and like to confirm.";}
   }else{kind="status-awaiting";symbol="◷";title=`Shared with ${state.partner?.display_name||"your partner"}`;text=`Waiting for ${state.partner?.display_name||"them"} to review and like the list.`;}
  }
- card.classList.add(kind);$("#statusSymbol").textContent=symbol;$("#statusTitle").textContent=title;$("#statusText").textContent=text;
+ card.classList.add(kind);$("#statusSymbol").textContent=symbol;$("#statusTitle").textContent=title;$("#statusText").textContent=text;applyListStatusTheme();
  $("#shareLabel").textContent="Share with "+(partner?.display_name||"your partner");
  $("#shareHint").textContent=kind==="status-liked"?"The latest list has been approved by both of you.":kind==="status-awaiting"?"Your partner will see a prompt to review and like the list.":"Changes sync automatically. Share when you're ready for approval.";
  $("#shareButton").disabled=!partner;
