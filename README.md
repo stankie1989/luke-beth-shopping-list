@@ -1,10 +1,11 @@
-# Luke & Beth's Shopping List — Version 1.5.5
+# Luke & Beth's Shopping List — Version 1.5.6
 
 ## Fix
-- Fixed the Update available banner background by using the app's defined surface colour.
-- Reworked the banner into a mobile-friendly grid so its message has the full width and cannot collapse into a narrow vertical strip.
-- Made the update action and dismiss control clearly separated and easy to tap.
-- Kept the banner above the bottom navigation and improved contrast/shadow.
+- Corrected the shopping-list card styling in light mode.
+- The card now uses a light surface and dark readable text.
+- Quantity controls and delete icons now use matching light-mode colours.
+- Kept the dark-mode styling unchanged.
+- Updated stylesheet/script asset versions and service-worker cache version.
 
 ## Deployment
 Replace the nine app files in GitHub with these files and commit to `main`.
