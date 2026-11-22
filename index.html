@@ -16,7 +16,9 @@
       <div class="auth-mark">🛒</div><div class="eyebrow">LUKE & BETH'S</div>
       <h1>Your shared shopping list</h1><p class="auth-intro">Sign in to keep your list in sync across both phones.</p>
       <form id="authForm" class="auth-form">
-        <label for="authName">Your name</label><input id="authName" maxlength="40" placeholder="Luke or Beth" required>
+        <div id="authNameField" class="auth-name-field hidden">
+          <label for="authName">Your name</label><input id="authName" maxlength="40" autocomplete="name" placeholder="Luke or Beth">
+        </div>
         <label for="authEmail">Email address</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
         <label for="authPassword">Password</label><input id="authPassword" type="password" minlength="8" placeholder="At least 8 characters" required>
         <button class="primary-button" id="authSubmit" type="submit">Sign in</button>
@@ -52,8 +54,8 @@
     <main>
       <section class="people-strip panel">
         <div class="people">
-          <span class="person luke"><b>L</b><span>Luke</span></span>
-          <span class="person beth"><b>B</b><span>Beth</span></span>
+          <span class="person luke" id="selfPerson"><b id="selfInitial">L</b><span id="selfName">Luke</span></span>
+          <span class="person beth" id="partnerPerson"><b id="partnerInitial">B</b><span id="partnerName">Beth</span></span>
         </div>
         <div class="live-status"><i></i><span id="syncLabel">Saved on this device</span></div>
       </section>
@@ -86,6 +88,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.3.1</p>
       </section>
 
       <button id="shareButton" class="share-button"><span class="send-icon">➤</span><span id="shareLabel">Share with Beth</span></button>
