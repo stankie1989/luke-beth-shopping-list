@@ -85,8 +85,74 @@ function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStar
 function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 function dateLabel(s){return new Date(`${s}T12:00:00`).toLocaleDateString("en-GB",{day:"numeric",month:"short"});}
 function mealImage(key){return MEAL_IMAGES.find(x=>x[0]===key)||MEAL_IMAGES[0];}
+function formatDMY(iso){const [y,m,d]=iso.split("-");return `${d}-${m}-${y}`;}
+function openDatePicker(defaultDate,mealType,action){
+ state.datePickerValue=defaultDate||localISO(new Date());
+ const chosen=new Date(`${state.datePickerValue}T12:00:00`);
+ state.datePickerMonth=new Date(chosen.getFullYear(),chosen.getMonth(),1);
+ state.datePickerAction=action||"new";
+ $("#datePickerMealType").value=mealType||"dinner";
+ renderDatePicker();
+ $("#datePickerDialog").showModal();
+}
+function renderDatePicker(){
+ const month=state.datePickerMonth;
+ $("#datePickerMonth").textContent=month.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+ $("#datePickerSelectedLabel").textContent=formatDMY(state.datePickerValue);
+ const grid=$("#datePickerGrid");grid.innerHTML="";
+ ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(label=>{const el=document.createElement("span");el.className="calendar-weekday";el.textContent=label;grid.append(el);});
+ const offset=(new Date(month.getFullYear(),month.getMonth(),1).getDay()+6)%7;
+ const count=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+ for(let i=0;i<offset;i++){const blank=document.createElement("span");blank.className="calendar-blank";grid.append(blank);}
+ for(let day=1;day<=count;day++){const date=new Date(month.getFullYear(),month.getMonth(),day),iso=localISO(date),b=document.createElement("button");b.type="button";b.className="calendar-day"+(iso===state.datePickerValue?" selected":"")+(iso===localISO(new Date())?" today":"");b.textContent=String(day);b.onclick=()=>{state.datePickerValue=iso;renderDatePicker();};grid.append(b);}
+}
+async function confirmDatePicker(){
+ const date=state.datePickerValue,type=$("#datePickerMealType").value,action=state.datePickerAction;
+ $("#datePickerDialog").close();
+ if(action==="reschedule"){
+  const meal=state.pendingRescheduleMeal;if(!meal)return;
+  const {data,error}=await db.from("menu_entries").update({entry_date:date,meal_type:type}).eq("id",meal.id).select("*").single();
+  if(error)return toast("Couldn't reschedule meal: "+error.message);
+  state.pendingRescheduleMeal=null;await loadMenu();toast("Meal rescheduled.");
+ }else if(action==="favourite"){
+  const f=state.pendingFavourite;if(!f)return;
+  const {data,error}=await db.from("menu_entries").insert({household_id:state.householdId,entry_date:date,meal_type:type,name:f.name,image_key:f.image_key,ingredients:f.ingredients||[],created_by:state.user.id}).select("*").single();
+  if(error)return toast("Couldn't add favourite: "+error.message);
+  state.menuEntries.push(data);renderMenu();toast("Favourite added to menu.");
+ }else openMealDialog(date,type,null);
+}
+async function setMealCompleted(entry,completed){
+ const {data,error}=await db.from("menu_entries").update({is_completed:completed}).eq("id",entry.id).select("*").single();
+ if(error)return toast("Couldn't update meal: "+error.message);
+ await loadMenu();toast(completed?"Meal marked as eaten.":"Meal marked as not eaten.");
+}
+function renderMissedMeals(){
+ const host=$("#missedMeals");if(!host)return;
+ const meals=(state.missedMeals||[]);
+ host.innerHTML="";
+ host.hidden=meals.length===0;
+ host.classList.toggle("hidden",meals.length===0);
+ if(!meals.length)return;
+ const head=document.createElement("div");head.className="missed-meals-heading";
+ const title=document.createElement("h3");title.textContent="Missed meals";
+ const count=document.createElement("span");count.className="missed-meals-count";count.textContent=String(meals.length);
+ head.append(title,count);host.append(head);
+ const intro=document.createElement("p");intro.className="missed-meals-intro";intro.textContent="Past meals you haven't marked as eaten. Reschedule them or tick them off.";host.append(intro);
+ meals.forEach(meal=>{
+  const row=document.createElement("div");row.className="missed-meal-row";
+  const art=document.createElement("span");art.className="missed-meal-art";art.textContent=mealImage(meal.image_key)[1];
+  const info=document.createElement("div");info.className="missed-meal-info";
+  const name=document.createElement("strong");name.textContent=meal.name;
+  const date=document.createElement("small");date.textContent=`${meal.meal_type} · ${formatDMY(meal.entry_date)}`;
+  info.append(name,date);
+  const had=document.createElement("button");had.type="button";had.className="secondary-button compact";had.textContent="✓ Had it";had.onclick=()=>setMealCompleted(meal,true);
+  const move=document.createElement("button");move.type="button";move.className="secondary-button compact";move.textContent="Reschedule";move.onclick=()=>{state.pendingRescheduleMeal=meal;openDatePicker(localISO(new Date()),meal.meal_type,"reschedule");};
+  row.append(art,info,had,move);host.append(row);
+ });
+}
 function renderMenu(){
  const host=$("#menuWeeks");if(!host)return;host.innerHTML="";
+ host.onclick=e=>{const b=e.target.closest("[data-edit-meal]");if(!b)return;const entry=state.menuEntries.find(x=>x.id===b.dataset.editMeal);if(entry)openMealDialog(entry.entry_date,entry.meal_type,entry);};
  if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));
  const anchor=new Date(`${state.menuStart}T12:00:00`);
  const monthMode=state.menuView==="month";
@@ -95,7 +161,7 @@ function renderMenu(){
  if(!monthMode)end.setDate(end.getDate()+13);
  $("#menuRange").textContent=monthMode?anchor.toLocaleDateString("en-GB",{month:"long",year:"numeric"}):`${dateLabel(localISO(start))} – ${dateLabel(localISO(end))}`;
  $("#menuViewToggle").value=state.menuView;
- if(monthMode){renderMenuMonth(host,start);return;}
+ if(monthMode){renderMenuMonth(host,start);renderMissedMeals();return;}
  for(let w=0;w<2;w++){
   const week=document.createElement("section");week.className="menu-week";
   const heading=document.createElement("h3");const ws=new Date(start);ws.setDate(ws.getDate()+w*7);const we=new Date(ws);we.setDate(we.getDate()+6);heading.textContent=`Week ${w+1} · ${dateLabel(localISO(ws))} – ${dateLabel(localISO(we))}`;week.append(heading);
@@ -111,8 +177,8 @@ function renderMenu(){
     if(slot.entry){
      const completed=!!slot.entry.is_completed;row.classList.toggle("meal-completed",completed);
      const tick=document.createElement("button");tick.type="button";tick.className="meal-complete-toggle"+(completed?" checked":"");tick.textContent=completed?"✓":"";tick.setAttribute("role","checkbox");tick.setAttribute("aria-checked",String(completed));tick.setAttribute("aria-label",completed?"Mark meal as not eaten":"Mark meal as eaten");tick.onclick=()=>setMealCompleted(slot.entry,!completed);
-     const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";thumb.textContent=im[1];thumb.title="Edit meal";thumb.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
-     const info=document.createElement("button");info.type="button";info.className="meal-info";info.innerHTML=`<small>${slot.label}</small><strong></strong>`;info.querySelector("strong").textContent=slot.entry.name;info.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
+     const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";thumb.textContent=im[1];thumb.title="Edit meal";thumb.dataset.editMeal=slot.entry.id;
+     const info=document.createElement("button");info.type="button";info.className="meal-info";info.innerHTML=`<small>${slot.label}</small><strong></strong>`;info.querySelector("strong").textContent=slot.entry.name;info.dataset.editMeal=slot.entry.id;
      const add=document.createElement("button");add.type="button";add.className="meal-add-ingredients";add.textContent="＋ List";add.title="Add ingredients to shopping list";add.onclick=()=>addMealIngredients(slot.entry);
      row.append(tick,thumb,info,add);
     }else{const add=document.createElement("button");add.type="button";add.className="menu-add-slot";add.textContent=`＋ Add ${slot.label.toLowerCase()}`;add.onclick=()=>openMealDialog(iso,slot.type,null);row.append(add);}
@@ -123,6 +189,7 @@ function renderMenu(){
   }
   host.append(week);
  }
+ renderMissedMeals();
 }
 function renderMenuMonth(host,monthStart){
  const gridStart=mondayOf(monthStart),last=new Date(monthStart.getFullYear(),monthStart.getMonth()+1,0),gridEnd=new Date(last);gridEnd.setDate(gridEnd.getDate()+((7-last.getDay())%7));
@@ -135,7 +202,7 @@ function renderMenuMonth(host,monthStart){
   const top=document.createElement("div");top.className="menu-month-day-top";const number=document.createElement("strong");number.textContent=date.getDate();top.append(number);
   if(iso===today){const tag=document.createElement("span");tag.textContent="TODAY";tag.className="menu-month-today-tag";top.append(tag);}
   cell.append(top);
-  dayMeals.slice(0,3).forEach(meal=>{const b=document.createElement("button");b.type="button";b.className="menu-month-meal"+(meal.is_completed?" completed":"");b.title=meal.name;b.textContent=mealImage(meal.image_key)[1];b.onclick=()=>openMealDialog(iso,meal.meal_type,meal);cell.append(b);});
+  dayMeals.slice(0,3).forEach(meal=>{const b=document.createElement("button");b.type="button";b.className="menu-month-meal"+(meal.is_completed?" completed":"");b.title=meal.name;b.textContent=mealImage(meal.image_key)[1];b.dataset.editMeal=meal.id;cell.append(b);});
   if(dayMeals.length>3){const more=document.createElement("small");more.className="menu-month-more";more.textContent=`+${dayMeals.length-3} more`;cell.append(more);}
   const add=document.createElement("button");add.type="button";add.className="menu-month-add";add.textContent="+";add.setAttribute("aria-label",`Add meal on ${formatDMY(iso)}`);add.onclick=()=>openDatePicker(iso,"dinner","new");cell.append(add);
   grid.append(cell);
@@ -380,6 +447,14 @@ function updateAuthMode(){
  $("#authPassword").autocomplete=signingUp?"new-password":"current-password";
 }
 function wire(){
+ // Keep essential navigation and dialog controls wired before optional setup.
+ $("#closeListPicker").onclick=()=>$("#shoppingListPickerDialog").close();
+ $("#cancelListPicker").onclick=()=>$("#shoppingListPickerDialog").close();
+ $("#closeMealDialog").onclick=()=>$("#mealDialog").close();
+ $("#cancelMeal").onclick=()=>$("#mealDialog").close();
+ $("#menuToday").onclick=async()=>{const now=new Date();state.menuStart=localISO(state.menuView==="month"?new Date(now.getFullYear(),now.getMonth(),1):mondayOf(now));await loadMenu();document.querySelector(".menu-day-today, .menu-month-day.is-today")?.scrollIntoView({behavior:"smooth",block:"center"});};
+ $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);if(state.menuView==="month")d.setMonth(d.getMonth()-1,1);else d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
+ $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);if(state.menuView==="month")d.setMonth(d.getMonth()+1,1);else d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
   const tab=b.dataset.tab;
   document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===b));
@@ -405,9 +480,6 @@ function wire(){
  $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:state.currentListId,name,quantity:1,is_bought:false,created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast(`Added to ${currentList()?.name||"your list"}.`);}};
  $("#clearBought").onclick=async()=>{const bought=state.items.filter(x=>x.is_bought);if(!bought.length)return toast("No bought items to clear.");const button=$("#clearBought");button.disabled=true;const {error}=await db.from("shopping_items").delete().eq("household_id",state.householdId).eq("list_id",state.currentListId).eq("is_bought",true);button.disabled=false;if(error){toast("Couldn't clear bought items: "+error.message);return;}const removedIds=new Set(bought.map(x=>x.id));state.items=state.items.filter(x=>!removedIds.has(x.id));renderItems();toast(`Cleared ${bought.length} bought item${bought.length===1?"":"s"}.`);};
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
- $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);if(state.menuView==="month")d.setMonth(d.getMonth()-1,1);else d.setDate(d.getDate()-14);state.menuStart=localISO(state.menuView==="month"?new Date(d.getFullYear(),d.getMonth(),1):d);loadMenu();};
- $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);if(state.menuView==="month")d.setMonth(d.getMonth()+1,1);else d.setDate(d.getDate()+14);state.menuStart=localISO(state.menuView==="month"?new Date(d.getFullYear(),d.getMonth(),1):d);loadMenu();};
- $("#menuToday").onclick=()=>{const now=new Date();state.menuStart=localISO(state.menuView==="month"?new Date(now.getFullYear(),now.getMonth(),1):mondayOf(now));loadMenu();};
  $("#menuViewToggle").onchange=e=>{state.menuView=e.target.value;const d=new Date(`${state.menuStart}T12:00:00`);state.menuStart=localISO(state.menuView==="month"?new Date(d.getFullYear(),d.getMonth(),1):mondayOf(d));loadMenu();};
  $("#menuFavourites").onclick=showFavourites;
  $("#mealForm").onsubmit=saveMeal;
@@ -417,7 +489,7 @@ function wire(){
  $("#useMealIcon").onclick=()=>{updateSelectedMealArt();$("#mealIconPickerDialog").close();};
  if($("#mealIconSearch"))$("#mealIconSearch").addEventListener("input",renderMealIconPicker);
  $("#mealIconMore").onclick=()=>{state.mealIconsExpanded=!state.mealIconsExpanded;renderMealIconPicker();};$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
- $("#closeListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#cancelListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#confirmListPicker").onclick=confirmMealIngredients;$("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;
+ $("#confirmListPicker").onclick=confirmMealIngredients;$("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;
  $("#datePrevMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()-1);renderDatePicker();};
  $("#dateNextMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()+1);renderDatePicker();};
  $("#likeListButton").onclick=approveList;$("#dismissApproval").onclick=()=>{state.approvalDismissed=true;$("#approvalCard").classList.add("hidden");};

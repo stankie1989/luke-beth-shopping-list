@@ -362,3 +362,13 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .menu-month-more{font-size:8px;color:var(--muted)}
 .menu-month-add{margin-top:auto;width:24px;height:21px;border:1px dashed var(--line);border-radius:7px;background:transparent;color:var(--muted);font-size:15px;line-height:1}
 @media(max-width:390px){.menu-month-grid{gap:3px}.menu-month-day{min-height:90px;padding:5px 2px;border-radius:9px}.menu-month-meal{width:24px;height:22px;font-size:15px}.menu-month-today-tag{font-size:6px}}
+
+/* v1.7.4 stability and compact missed-meals panel */
+#missedMeals[hidden],#missedMeals.hidden{display:none!important}
+.missed-meal-row{display:flex;align-items:center;gap:9px;padding:10px 0;border-top:1px solid var(--line)}
+.missed-meal-art{font-size:25px;flex:none}
+.missed-meal-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.missed-meal-info strong{font-size:13px;overflow-wrap:anywhere}
+.missed-meal-info small{font-size:10px;color:var(--muted)}
+.missed-meal-row button{font-size:11px;white-space:nowrap}
+.menu-day-today .menu-day-number{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#08b8f5,#7436ef);color:#fff;box-shadow:0 4px 14px #08b8f544}
