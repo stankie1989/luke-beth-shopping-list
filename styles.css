@@ -226,3 +226,49 @@ input,select,textarea{font-size:16px}
 @media(max-width:390px){.meal-image-choices{grid-template-columns:repeat(6,minmax(0,1fr))}.menu-panel{padding:12px}.menu-week{padding:9px}}
 
 @media(max-width:380px){.bottom-nav{padding-left:5px;padding-right:5px}.nav-item{font-size:9px;min-width:0}.nav-item span{font-size:17px}}
+
+/* v1.6.1 – polished meal dialogs and monthly date selector */
+dialog.app-dialog{
+ width:min(560px,calc(100% - 28px));max-width:560px;max-height:calc(100dvh - 34px);
+ margin:auto;padding:22px;border:1px solid var(--line);border-radius:24px;
+ background:linear-gradient(155deg,var(--surface) 0%,var(--bg) 100%);
+ color:var(--text);box-shadow:0 24px 80px #0009;overflow-y:auto;
+}
+dialog.app-dialog::backdrop{background:rgba(3,6,18,.76);backdrop-filter:blur(7px)}
+dialog.app-dialog form{display:block}
+.dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.dialog-heading>div{display:flex;align-items:center;gap:10px}
+.dialog-heading h2{font-size:21px;margin:0;font-weight:800}
+.dialog-close{width:38px;height:38px;flex:none;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--text);font-size:24px;line-height:1}
+dialog.app-dialog label{display:block;margin:14px 0 7px;color:var(--muted);font-size:13px;font-weight:700}
+dialog.app-dialog input:not([type=checkbox]),dialog.app-dialog select,dialog.app-dialog textarea{
+ display:block;width:100%;min-height:48px;padding:12px 14px;border:1px solid var(--line);
+ border-radius:13px;background:var(--surface2);color:var(--text);font:inherit;outline:none;
+}
+dialog.app-dialog input:focus,dialog.app-dialog select:focus,dialog.app-dialog textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #08b8f526}
+dialog.app-dialog textarea{min-height:112px;resize:vertical}
+.dialog-actions{display:flex;gap:10px;margin-top:18px}
+.dialog-actions button{flex:1;min-height:48px}
+dialog.app-dialog .primary-button{border:0;background:var(--accent);color:white;border-radius:14px;font-weight:800}
+dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:14px}
+.meal-image-choices{grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.meal-image-choice{min-width:0;box-shadow:0 4px 12px #0002}
+.meal-favourite-check{display:flex!important;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--surface2)}
+.meal-favourite-check input{width:19px;height:19px;accent-color:var(--purple)}
+.date-picker-month{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 14px}
+.date-picker-month strong{font-size:17px}
+.date-picker-month button{min-width:42px;min-height:40px;padding:6px 12px;font-size:22px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}
+.calendar-weekday{padding:7px 0;color:var(--muted);font-size:11px;font-weight:800}
+.calendar-blank{aspect-ratio:1}
+.calendar-day{aspect-ratio:1;min-width:0;border:1px solid transparent;border-radius:12px;background:var(--surface2);color:var(--text);font-weight:700}
+.calendar-day.today{border-color:var(--blue)}
+.calendar-day.selected{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 5px 16px #6334e955}
+.date-picker-selected{margin:15px 0 4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--muted);font-size:13px}
+.date-picker-selected strong{color:var(--text);font-variant-numeric:tabular-nums}
+@media(max-width:420px){
+ dialog.app-dialog{padding:18px;border-radius:21px}
+ .meal-image-choices{grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+ .meal-image-choice{font-size:22px}
+ .dialog-actions{gap:8px}
+}
