@@ -65,7 +65,7 @@
           <div><h2 id="listHeadingTitle">Shopping List</h2><p id="listHeadingDescription">Keep everything in one place</p></div>
           <span id="activeListVisibility" class="shared-pill">Shared</span>
         </div>
-        <div class="list-switcher"><select id="listSelector" aria-label="Choose shopping list"></select><button id="newListButton" class="add-submit" type="button">＋ List</button><button id="manageListsButton" class="secondary-button compact" type="button">Manage</button></div>
+        <div class="list-switcher"><span id="activeListName" class="visually-hidden" aria-live="polite"></span><select id="listSelector" aria-label="Choose shopping list"></select><button id="newListButton" class="add-submit" type="button">＋ List</button><button id="manageListsButton" class="secondary-button compact" type="button">Manage</button></div>
         <div id="items" class="items" aria-live="polite"></div>
         <form id="addForm" class="add-row">
           <button class="add-symbol" type="submit" aria-label="Add item">＋</button>
@@ -95,7 +95,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.5.1</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.5.2</p>
       </section>
 
       <section id="listStatusCard" class="list-status-card status-neutral" aria-live="polite">
