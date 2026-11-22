@@ -467,7 +467,6 @@ function wire(){
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
- $("#addOptionalMeal").onclick=()=>openDatePicker(localISO(new Date()),"breakfast","new");
  $("#menuFavourites").onclick=showFavourites;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
