@@ -68,3 +68,10 @@ This build uses the Supabase project URL and public publishable key in the brows
 
 ### Current scope
 Account sign-in, private household membership, shared shopping items, activity feed and live database updates are included. Push notifications are not configured yet. The share action currently creates an in-app share event.
+
+
+## Multiple lists (v1.5.0)
+
+Before deploying this version, open Supabase → SQL Editor and run `supabase-v1.5.0-multiple-lists.sql` once. This migration preserves existing shopping items by moving them into the original shared Shopping List. Do not rerun the original database setup SQL.
+
+The app now supports multiple lists per household. Each list has an owner and can be shared with the household or private to its owner. Private list items and activity are protected by Supabase Row Level Security. List visibility changes retain existing items.

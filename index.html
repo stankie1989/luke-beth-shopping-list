@@ -7,7 +7,7 @@
   <meta name="description" content="Luke and Beth's shared shopping list">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=1.4.0">
+  <link rel="stylesheet" href="./styles.css?v=1.5.0">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -62,9 +62,10 @@
 
       <section class="list-panel panel">
         <div class="list-heading">
-          <div><h2>Shopping List</h2><p>Keep everything in one place</p></div>
-          <span class="shared-pill"><span>♧</span> Shared</span>
+          <div><h2 id="listHeadingTitle">Shopping List</h2><p id="listHeadingDescription">Keep everything in one place</p></div>
+          <span id="activeListVisibility" class="shared-pill">Shared</span>
         </div>
+        <div class="list-switcher"><select id="listSelector" aria-label="Choose shopping list"></select><button id="newListButton" class="add-submit" type="button">＋ List</button><button id="manageListsButton" class="secondary-button compact" type="button">Manage</button></div>
         <div id="items" class="items" aria-live="polite"></div>
         <form id="addForm" class="add-row">
           <button class="add-symbol" type="submit" aria-label="Add item">＋</button>
@@ -138,8 +139,15 @@
     </form>
   </dialog>
 
+  <dialog id="manageListsDialog" class="modal">
+    <div class="modal-card"><div class="modal-title"><h2>Manage your lists</h2><button class="icon-button close" id="closeManageLists" type="button" aria-label="Close">×</button></div>
+      <p class="modal-note">Switch each list between shared with your household and private to you. Making a list shared reveals its existing items to your partner.</p>
+      <div id="manageLists" class="manage-lists"></div>
+      <button id="manageCreateList" class="primary-button" type="button">＋ Create new list</button>
+    </div>
+  </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.3.9"></script>
+  <script src="./app.js?v=1.5.0"></script>
 </body>
 </html>
