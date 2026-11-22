@@ -292,3 +292,22 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .meal-image-choice.selected::after{content:"✓";position:absolute;right:3px;top:3px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#08b8f5;color:#061326;font-size:11px;font-weight:900}
 .meal-image-choice:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 @media(max-width:390px){.meal-icon-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.meal-image-choice{font-size:25px;min-height:50px}}
+
+/* v1.6.3 – compact meal form with a dedicated illustration picker */
+.selected-meal-art{display:flex;align-items:center;gap:12px;min-height:72px;padding:11px 12px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
+.selected-meal-art>span:first-child{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--surface);font-size:30px}
+.selected-meal-art>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.selected-meal-art strong{font-size:13px;color:var(--text)}
+.selected-meal-art small{font-size:11px;color:var(--muted)}
+.selected-meal-art button{flex:none}
+.meal-icon-picker-dialog{width:min(520px,calc(100% - 28px))}
+.meal-icon-picker-dialog .meal-icon-search{margin:14px 0 12px}
+.meal-icon-picker-dialog .meal-icon-grid{grid-template-columns:repeat(5,minmax(0,1fr));max-height:min(43dvh,390px);overflow-y:auto;gap:9px;padding:4px}
+.meal-icon-picker-dialog .meal-image-choice{width:100%;min-height:58px;aspect-ratio:1;font-size:29px}
+.meal-icon-picker-dialog .meal-icon-more{width:100%;margin-top:10px}
+.meal-icon-empty{grid-column:1/-1;padding:25px 10px;text-align:center;color:var(--muted);font-size:13px}
+@media(max-width:390px){
+ .meal-icon-picker-dialog{padding:16px}
+ .meal-icon-picker-dialog .meal-icon-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+ .meal-icon-picker-dialog .meal-image-choice{min-height:54px;font-size:27px}
+}

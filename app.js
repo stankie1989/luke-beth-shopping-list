@@ -153,6 +153,30 @@ async function confirmDatePicker(){
   state.menuEntries.push(data);renderMenu();toast("Favourite added to menu.");
  }else openMealDialog(date,type,null);
 }
+
+function updateSelectedMealArt(){
+ const selected=mealImage(state.selectedMealImage);
+ $("#selectedMealEmoji").textContent=selected[1];
+ $("#selectedMealLabel").textContent=selected[2];
+}
+function renderMealIconPicker(){
+ const host=$("#mealIconGrid"),search=$("#mealIconSearch"),more=$("#mealIconMore");
+ const q=search.value.trim().toLowerCase();
+ const matches=MEAL_IMAGES.filter(x=>x[2].toLowerCase().includes(q)||x[0].toLowerCase().includes(q));
+ const shown=(state.mealIconsExpanded||q)?matches:matches.slice(0,18);
+ host.innerHTML="";
+ if(!matches.length){const empty=document.createElement("p");empty.className="meal-icon-empty";empty.textContent="No matching illustrations. Try another search.";host.append(empty);}
+ shown.forEach(([key,emoji,label])=>{
+  const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");
+  b.textContent=emoji;b.title=label;b.setAttribute("aria-label",label);b.setAttribute("aria-pressed",String(key===state.selectedMealImage));
+  b.onclick=()=>{state.selectedMealImage=key;renderMealIconPicker();};host.append(b);
+ });
+ more.hidden=!!q||matches.length<=18;
+ more.textContent=state.mealIconsExpanded?"Show fewer illustrations":`Show all ${matches.length} illustrations`;
+}
+function openMealIconPicker(){
+ state.mealIconsExpanded=false;$("#mealIconSearch").value="";renderMealIconPicker();$("#mealIconPickerDialog").showModal();
+}
 function openMealDialog(date,type,entry){
  state.editingMealId=entry?.id||null;state.activeMenuSlot=type;state.selectedMealImage=entry?.image_key|| (type==="breakfast"?"breakfast":"dinner");
  $("#mealDialogTitle").textContent=entry?"Edit meal":`Add ${type}`;
@@ -160,12 +184,7 @@ function openMealDialog(date,type,entry){
  $("#mealType").value=type;
  $("#mealIngredients").value=(entry?.ingredients||[]).map(x=>`${x.name}${x.quantity&&x.quantity!=="1"?" x "+x.quantity:""}`).join("\n");
  $("#mealSaveFavourite").checked=false;$("#mealDialog").dataset.date=date;
- const host=$("#mealImageChoices");host.innerHTML="";
- const search=document.createElement("input");search.type="search";search.id="mealIconSearch";search.placeholder="Search food icons…";search.className="meal-icon-search";search.setAttribute("aria-label","Search food illustrations");
- const grid=document.createElement("div");grid.className="meal-icon-grid";
- const more=document.createElement("button");more.type="button";more.className="secondary-button meal-icon-more";
- function drawIcons(){const q=search.value.trim().toLowerCase(),matches=MEAL_IMAGES.filter(x=>x[2].toLowerCase().includes(q)||x[0].toLowerCase().includes(q));const shown=(state.mealIconsExpanded||q)?matches:matches.slice(0,18);grid.innerHTML="";shown.forEach(([key,emoji,label])=>{const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");b.textContent=emoji;b.title=label;b.setAttribute("aria-label",label);b.setAttribute("aria-pressed",String(key===state.selectedMealImage));b.onclick=()=>{state.selectedMealImage=key;drawIcons();};grid.append(b);});more.hidden=!!q||matches.length<=18;more.textContent=state.mealIconsExpanded?"Show fewer icons":`Show all ${matches.length} icons`;}
- search.addEventListener("input",drawIcons);more.onclick=()=>{state.mealIconsExpanded=!state.mealIconsExpanded;drawIcons();};host.append(search,grid,more);drawIcons();
+ updateSelectedMealArt();
  $("#mealForm .meal-delete")?.remove();
  if(entry){const del=document.createElement("button");del.type="button";del.className="text-button meal-delete";del.textContent="Delete meal";del.onclick=async()=>{if(!confirm("Delete this meal from the menu?"))return;const {error}=await db.from("menu_entries").delete().eq("id",entry.id);if(error)return toast("Couldn't delete meal: "+error.message);state.menuEntries=state.menuEntries.filter(x=>x.id!==entry.id);$("#mealDialog").close();renderMenu();};$("#mealForm").append(del);}
  $("#mealDialog").showModal();
@@ -405,7 +424,13 @@ function wire(){
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
  $("#addOptionalMeal").onclick=()=>openDatePicker(localISO(new Date()),"breakfast","new");
  $("#menuFavourites").onclick=showFavourites;
- $("#mealForm").onsubmit=saveMeal;$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
+ $("#mealForm").onsubmit=saveMeal;
+ $("#openMealIconPicker").onclick=openMealIconPicker;
+ $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
+ $("#cancelMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
+ $("#useMealIcon").onclick=()=>{updateSelectedMealArt();$("#mealIconPickerDialog").close();};
+ $("#mealIconSearch").addEventListener("input",renderMealIconPicker);
+ $("#mealIconMore").onclick=()=>{state.mealIconsExpanded=!state.mealIconsExpanded;renderMealIconPicker();};$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
  $("#closeListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#cancelListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#confirmListPicker").onclick=confirmMealIngredients;$("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;
  $("#datePrevMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()-1);renderDatePicker();};
  $("#dateNextMonth").onclick=()=>{state.datePickerMonth.setMonth(state.datePickerMonth.getMonth()+1);renderDatePicker();};
