@@ -1,11 +1,9 @@
-# Luke & Beth's Shopping List — Version 1.5.3
+# Luke & Beth's Shopping List — Version 1.5.4
 
-## Changes
-- Increased text size and spacing in Manage your lists.
-- Improved the list-management layout on narrow mobile screens so buttons are easier to read and tap.
-- Added an in-app Update available banner with an Update now button and an Update later option.
-- New service worker waits for the user's approval before activating an update; selecting Update now activates it and reloads the app.
-- Update checks run on app launch and when the app returns to the foreground.
+## Change
+- Reworded the Manage your lists explanation to: “Choose whether each list is shared with your household or private to you.”
+- Increased that explanatory text to 22px (twice the previous 11px size).
+- Updated app asset versions and service-worker cache version.
 
 ## Deployment
 Replace the nine app files in GitHub with these files and commit to `main`.
