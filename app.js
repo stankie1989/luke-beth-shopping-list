@@ -3,7 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
-const state={shoppingMode:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={menuEntries:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -79,6 +79,113 @@ function buildItemRow(item,shopping=false){
  }else{const q=document.createElement("span");q.className="shopping-mode-quantity";q.textContent=item.quantity>1?`×${item.quantity}`:"";row.append(c,n,q);}
  return row;
 }
+
+const MEAL_IMAGES=[
+ ["dinner","🍽️","Dinner plate"],["pasta","🍝","Pasta"],["pizza","🍕","Pizza"],["burger","🍔","Burger"],["curry","🍛","Curry"],["roast","🍗","Roast dinner"],["salad","🥗","Salad"],["fish","🐟","Fish"],["soup","🍲","Soup"],["tacos","🌮","Tacos"],["sandwich","🥪","Sandwich"],["breakfast","🍳","Breakfast"],["pancakes","🥞","Pancakes"],["rice","🍚","Rice"],["vegetables","🥦","Vegetables"],["noodles","🍜","Noodles"]
+];
+function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+function dateLabel(s){return new Date(`${s}T12:00:00`).toLocaleDateString("en-GB",{day:"numeric",month:"short"});}
+function mealImage(key){return MEAL_IMAGES.find(x=>x[0]===key)||MEAL_IMAGES[0];}
+function renderMenu(){
+ const host=$("#menuWeeks");if(!host)return;host.innerHTML="";
+ if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));
+ const start=new Date(`${state.menuStart}T12:00:00`),end=new Date(start);end.setDate(end.getDate()+13);
+ $("#menuRange").textContent=`${dateLabel(localISO(start))} – ${dateLabel(localISO(end))}`;
+ for(let w=0;w<2;w++){
+  const week=document.createElement("section");week.className="menu-week";
+  const heading=document.createElement("h3");const ws=new Date(start);ws.setDate(ws.getDate()+w*7);const we=new Date(ws);we.setDate(we.getDate()+6);heading.textContent=`Week ${w+1} · ${dateLabel(localISO(ws))} – ${dateLabel(localISO(we))}`;week.append(heading);
+  for(let d=0;d<7;d++){
+   const date=new Date(ws);date.setDate(date.getDate()+d);const iso=localISO(date);
+   const day=document.createElement("div");day.className="menu-day";
+   const dayhead=document.createElement("div");dayhead.className="menu-day-heading";dayhead.innerHTML=`<strong>${date.toLocaleDateString("en-GB",{weekday:"short"})}</strong><span>${date.getDate()}</span>`;day.append(dayhead);
+   const meals=state.menuEntries.filter(x=>x.entry_date===iso).sort((a,b)=>["dinner","breakfast","lunch"].indexOf(a.meal_type)-["dinner","breakfast","lunch"].indexOf(b.meal_type));
+   const dinner=meals.find(x=>x.meal_type==="dinner");
+   const slots=[{type:"dinner",label:"Dinner",primary:true},...meals.filter(x=>x.meal_type!=="dinner").map(x=>({type:x.meal_type,label:x.meal_type==="breakfast"?"Breakfast":"Lunch",entry:x}))];
+   if(!dinner)slots[0].entry=null;else slots[0].entry=dinner;
+   slots.forEach(slot=>{
+    const row=document.createElement("div");row.className="menu-meal-row";
+    if(slot.entry){
+     const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";thumb.textContent=im[1];thumb.title="Edit meal";thumb.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
+     const info=document.createElement("button");info.type="button";info.className="meal-info";info.innerHTML=`<small>${slot.label}</small><strong></strong>`;info.querySelector("strong").textContent=slot.entry.name;info.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
+     const add=document.createElement("button");add.type="button";add.className="meal-add-ingredients";add.textContent="＋ List";add.title="Add ingredients to shopping list";add.onclick=()=>addMealIngredients(slot.entry);
+     row.append(thumb,info,add);
+    }else{
+     const add=document.createElement("button");add.type="button";add.className="menu-add-slot";add.textContent=`＋ Add ${slot.label.toLowerCase()}`;add.onclick=()=>openMealDialog(iso,slot.type,null);row.append(add);
+    }
+    day.append(row);
+   });
+   const optional=document.createElement("button");optional.type="button";optional.className="menu-optional-add";optional.textContent="＋ Breakfast / lunch";optional.onclick=()=>openMealDialog(iso,"breakfast",null);day.append(optional);
+   week.append(day);
+  }
+  host.append(week);
+ }
+}
+function openMealDialog(date,type,entry){
+ state.editingMealId=entry?.id||null;state.activeMenuSlot=type;state.selectedMealImage=entry?.image_key|| (type==="breakfast"?"breakfast":"dinner");
+ $("#mealDialogTitle").textContent=entry?"Edit meal":`Add ${type}`;
+ $("#mealName").value=entry?.name||"";
+ $("#mealType").value=type;
+ $("#mealIngredients").value=(entry?.ingredients||[]).map(x=>`${x.name}${x.quantity&&x.quantity!=="1"?" x "+x.quantity:""}`).join("\n");
+ $("#mealSaveFavourite").checked=false;$("#mealDialog").dataset.date=date;
+ const host=$("#mealImageChoices");host.innerHTML="";
+ MEAL_IMAGES.forEach(([key,emoji,label])=>{const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");b.textContent=emoji;b.title=label;b.setAttribute("aria-label",label);b.onclick=()=>{state.selectedMealImage=key;host.querySelectorAll("button").forEach(x=>x.classList.toggle("selected",x===b));};host.append(b);});
+ $("#mealForm .meal-delete")?.remove();
+ if(entry){const del=document.createElement("button");del.type="button";del.className="text-button meal-delete";del.textContent="Delete meal";del.onclick=async()=>{if(!confirm("Delete this meal from the menu?"))return;const {error}=await db.from("menu_entries").delete().eq("id",entry.id);if(error)return toast("Couldn't delete meal: "+error.message);state.menuEntries=state.menuEntries.filter(x=>x.id!==entry.id);$("#mealDialog").close();renderMenu();};$("#mealForm").append(del);}
+ $("#mealDialog").showModal();
+}
+function parseIngredients(raw){return raw.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{const m=line.match(/^(.*?)\s+x\s+(.+)$/i);return {name:(m?m[1]:line).trim(),quantity:m?m[2].trim():"1"};}).filter(x=>x.name);}
+async function saveMeal(e){
+ e.preventDefault();const name=$("#mealName").value.trim();if(!name)return;
+ const date=$("#mealDialog").dataset.date,ingredients=parseIngredients($("#mealIngredients").value);
+ const payload={household_id:state.householdId,entry_date:date,meal_type:$("#mealType").value,name:name.slice(0,90),image_key:state.selectedMealImage,ingredients,created_by:state.user.id};
+ let result;
+ if(state.editingMealId)result=await db.from("menu_entries").update(payload).eq("id",state.editingMealId).select("*").single();
+ else result=await db.from("menu_entries").insert(payload).select("*").single();
+ if(result.error)return toast("Couldn't save meal: "+result.error.message);
+ if(state.editingMealId)state.menuEntries=state.menuEntries.map(x=>x.id===result.data.id?result.data:x);else state.menuEntries.push(result.data);
+ if($("#mealSaveFavourite").checked)await saveFavouriteFrom(result.data);
+ $("#mealDialog").close();renderMenu();toast("Meal saved.");
+}
+async function saveFavouriteFrom(entry){
+ const {error}=await db.from("menu_favourites").upsert({household_id:state.householdId,name:entry.name,image_key:entry.image_key,ingredients:entry.ingredients,created_by:state.user.id},{onConflict:"household_id,name"});
+ if(error)toast("Meal saved, but favourite couldn't be saved: "+error.message);
+ else await loadMenuFavourites();
+}
+async function loadMenu(){
+ if(!state.householdId)return;
+ const start=new Date(`${state.menuStart||localISO(mondayOf(new Date()))}T12:00:00`),end=new Date(start);end.setDate(end.getDate()+13);
+ const {data,error}=await db.from("menu_entries").select("*").eq("household_id",state.householdId).gte("entry_date",localISO(start)).lte("entry_date",localISO(end)).order("entry_date");
+ if(error){console.warn(error);return;}
+ state.menuEntries=data||[];renderMenu();
+}
+async function loadMenuFavourites(){
+ const {data,error}=await db.from("menu_favourites").select("*").eq("household_id",state.householdId).order("name");
+ if(error){console.warn(error);return;}state.menuFavourites=data||[];
+}
+async function showFavourites(){
+ await loadMenuFavourites();const host=$("#favouritesList");host.innerHTML="";
+ if(!state.menuFavourites.length){host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it."; }
+ state.menuFavourites.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");icon.textContent=mealImage(f.image_key)[1];const name=document.createElement("strong");name.textContent=f.name;const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{const d=prompt("Which date? Enter YYYY-MM-DD",state.menuStart);if(!d)return;const type=prompt("Meal type: dinner, breakfast or lunch","dinner");if(!["dinner","breakfast","lunch"].includes(type))return toast("Choose dinner, breakfast or lunch.");db.from("menu_entries").insert({household_id:state.householdId,entry_date:d,meal_type:type,name:f.name,image_key:f.image_key,ingredients:f.ingredients||[],created_by:state.user.id}).select("*").single().then(({data,error})=>{if(error)return toast("Couldn't add favourite: "+error.message);state.menuEntries.push(data);renderMenu();toast("Favourite added to menu.");$("#favouritesDialog").close();});};row.append(icon,name,use);host.append(row);});
+ $("#favouritesDialog").showModal();
+}
+async function addMealIngredients(entry){
+ const ingredients=entry.ingredients||[];if(!ingredients.length)return toast("No ingredients saved for this meal yet.");
+ const {data:lists,error}=await db.from("shopping_lists").select("*").eq("household_id",state.householdId).order("created_at");
+ if(error||!lists?.length)return toast("Couldn't load your shopping lists.");
+ const choices=lists.map((x,i)=>`${i+1}. ${x.name}${x.is_shared?" (shared)":" (private)"}`).join("\n");
+ const answer=prompt(`Add ingredients to which list?\n${choices}\nEnter a number:`,String(Math.max(1,lists.findIndex(x=>x.id===state.currentListId)+1)));
+ const target=lists[Number(answer)-1];if(!target)return;
+ for(const ing of ingredients){
+  const numeric=Number(ing.quantity);
+  const itemName=Number.isFinite(numeric)&&numeric>0?ing.name:`${ing.name} (${ing.quantity})`;
+  const addQty=Number.isFinite(numeric)&&numeric>0?Math.max(1,Math.round(numeric)):1;
+  const {data:existing}=await db.from("shopping_items").select("*").eq("list_id",target.id).ilike("name",itemName).maybeSingle();
+  if(existing){const {error:e}=await db.from("shopping_items").update({quantity:existing.quantity+addQty,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",existing.id);if(e)console.warn(e);}
+  else{const {error:e}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:target.id,name:itemName,quantity:addQty,is_bought:false,created_by:state.user.id,updated_by:state.user.id});if(e)console.warn(e);}
+ }
+ if(target.id===state.currentListId)await refreshCurrentList();toast(`Ingredients added to ${target.name}.`);
+}
 function renderItems(){
  const host=$("#items");host.innerHTML="";const modeHost=$("#shoppingModeItems");if(modeHost)modeHost.innerHTML="";
  state.items.forEach(item=>{host.append(buildItemRow(item));if(modeHost)modeHost.append(buildItemRow(item,true));});
@@ -89,7 +196,7 @@ function setShoppingMode(enabled){
  state.shoppingMode=enabled;$("#appShell").classList.toggle("shopping-mode-active",enabled);
  $(".topbar").classList.toggle("hidden",enabled);$(".people-strip").classList.toggle("hidden",enabled);
  $(".list-panel").classList.toggle("hidden",enabled);$("#shareButton").classList.toggle("hidden",enabled);$("#shareHint").classList.toggle("hidden",enabled);
- $("#historyPanel").classList.add("hidden");$("#notificationsPanel").classList.add("hidden");$("#morePanel").classList.add("hidden");
+ $("#historyPanel").classList.add("hidden");$("#notificationsPanel").classList.add("hidden");$("#menuPanel").classList.add("hidden");$("#morePanel").classList.add("hidden");
  $(".bottom-nav").classList.toggle("hidden",enabled);$("#shoppingModeScreen").classList.toggle("hidden",!enabled);
  if(enabled)renderItems();
 }
@@ -258,6 +365,12 @@ function wire(){
  $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:state.currentListId,name,quantity:1,is_bought:false,created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast(`Added to ${currentList()?.name||"your list"}.`);}};
  $("#clearBought").onclick=async()=>{const bought=state.items.filter(x=>x.is_bought);if(!bought.length)return toast("No bought items to clear.");const button=$("#clearBought");button.disabled=true;const {error}=await db.from("shopping_items").delete().eq("household_id",state.householdId).eq("list_id",state.currentListId).eq("is_bought",true);button.disabled=false;if(error){toast("Couldn't clear bought items: "+error.message);return;}const removedIds=new Set(bought.map(x=>x.id));state.items=state.items.filter(x=>!removedIds.has(x.id));renderItems();toast(`Cleared ${bought.length} bought item${bought.length===1?"":"s"}.`);};
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
+ $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
+ $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
+ $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
+ $("#addOptionalMeal").onclick=()=>{const d=prompt("Which date? Enter YYYY-MM-DD",localISO(new Date()));if(d)openMealDialog(d,"breakfast",null);};
+ $("#menuFavourites").onclick=showFavourites;
+ $("#mealForm").onsubmit=saveMeal;$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
  $("#likeListButton").onclick=approveList;$("#dismissApproval").onclick=()=>{state.approvalDismissed=true;$("#approvalCard").classList.add("hidden");};
  $("#shareButton").onclick=()=>$("#shareDialog").showModal();$("#confirmShare").onclick=async e=>{e.preventDefault();$("#shareDialog").close();if(!state.partner)return toast("Your partner hasn't joined yet.");const version=state.listStatus?.list_version??1;const {error}=await db.from("shopping_list_shares").insert({household_id:state.householdId,list_version:version,sender_id:state.user.id,recipient_id:state.partner.user_id});if(error){toast("Couldn\'t share: "+error.message);return;}const notify=await db.from("share_events").insert({household_id:state.householdId,sender_id:state.user.id,recipient_id:state.partner.user_id});if(notify.error)console.warn(notify.error);state.approvalDismissed=false;await refreshListStatus();toast(`Shared ${currentList()?.name||"list"} with ${state.partner.display_name}.`);};
  $("#settingsDialog").addEventListener("click",e=>{if(e.target===$("#settingsDialog"))$("#settingsDialog").close();});$("#shareDialog").addEventListener("click",e=>{if(e.target===$("#shareDialog"))$("#shareDialog").close();});
@@ -271,14 +384,16 @@ function wire(){
   $("#morePanel").classList.toggle("hidden",tab!=="more");
   $("#historyPanel").classList.toggle("hidden",tab!=="history");
   $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
+  $("#menuPanel").classList.toggle("hidden",tab!=="menu");
   $("#shareButton").classList.toggle("hidden",tab!=="list");
   $("#shareHint").classList.toggle("hidden",tab!=="list");
   $(".list-panel").classList.toggle("hidden",tab!=="list");
   $(".people-strip").classList.toggle("hidden",tab==="more");
   if(tab==="history")refreshActivity();
+  if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
  });
 }
-async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
   navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>{

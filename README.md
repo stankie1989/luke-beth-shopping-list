@@ -1,4 +1,4 @@
-# Luke & Beth's Shopping List — Version 1.5.16
+# Luke & Beth's Shopping List — Version 1.6.0
 
 ## iPhone improvements
 - Added an Apple Touch Icon so iPhone home-screen installation uses the shopping trolley app artwork instead of a generic initial.
@@ -12,3 +12,9 @@
 Replace the app files in the GitHub repository with the files in this ZIP and commit to `main`. No Supabase SQL migration is required. The ZIP contains no SQL file.
 
 For Beth's iPhone icon, after deployment she may need to remove the existing home-screen shortcut and add the website to her Home Screen again so iOS fetches the new Apple Touch Icon.
+
+
+## Version 1.6.0 – Menu Planner
+- Added shared fortnight menu planner with dinner-first daily slots and optional breakfast/lunch.
+- Added selectable cartoon food emoji illustrations, meal ingredients, favourites, and add-to-shopping-list support.
+- Requires the separate menu planner SQL migration in Supabase.

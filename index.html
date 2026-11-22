@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=1.5.16">
+  <link rel="stylesheet" href="./styles.css?v=1.6.0">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -104,6 +104,14 @@
       </section>
 
 
+      <section id="menuPanel" class="menu-panel panel hidden">
+        <div class="section-heading menu-title-row"><div><span class="section-icon">📅</span><h2>Our Menu</h2></div><button id="menuToday" class="secondary-button compact" type="button">Today</button></div>
+        <p class="more-description">Plan two weeks of dinners together. Add breakfast or lunch whenever you need them.</p>
+        <div class="menu-range-row"><button id="menuPrev" class="icon-button" type="button" aria-label="Previous fortnight">‹</button><strong id="menuRange">Loading dates…</strong><button id="menuNext" class="icon-button" type="button" aria-label="Next fortnight">›</button></div>
+        <div id="menuWeeks" class="menu-weeks"></div>
+        <div class="menu-actions"><button id="addOptionalMeal" class="secondary-button" type="button">＋ Add breakfast or lunch</button><button id="menuFavourites" class="secondary-button" type="button">★ Favourite meals</button></div>
+      </section>
+
       <section id="morePanel" class="more-panel panel hidden">
         <div class="section-heading"><div><span class="section-icon">•••</span><h2>More</h2></div></div>
         <section class="more-section"><h3>Our household</h3><p class="more-description">Manage who has access to your shared shopping list.</p><div id="householdMembers" class="household-members"></div></section>
@@ -112,7 +120,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.5.16</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.6.0</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -127,6 +135,7 @@
       <button class="nav-item active" data-tab="list"><span>🛒</span>Shopping List</button>
       <button class="nav-item" data-tab="history"><span>◷</span>History</button>
       <button class="nav-item" data-tab="notifications"><span>♧</span>Notifications</button>
+      <button class="nav-item" data-tab="menu"><span>📅</span>Menu</button>
       <button class="nav-item" data-tab="more"><span>•••</span>More</button>
     </nav>
   </div>
@@ -152,6 +161,21 @@
     </form>
   </dialog>
 
+  <dialog id="mealDialog" class="app-dialog">
+    <form id="mealForm" method="dialog">
+      <div class="dialog-heading"><div><span class="section-icon">🍽️</span><h2 id="mealDialogTitle">Add a meal</h2></div><button type="button" class="dialog-close" id="closeMealDialog">×</button></div>
+      <label for="mealName">Meal name</label><input id="mealName" maxlength="90" required placeholder="e.g. Chicken fajitas">
+      <label for="mealType">Meal slot</label><select id="mealType"><option value="dinner">Dinner</option><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option></select>
+      <label>Choose an illustration</label><div id="mealImageChoices" class="meal-image-choices"></div>
+      <label for="mealIngredients">Ingredients (one per line)</label><textarea id="mealIngredients" rows="4" placeholder="Chicken x 500g&#10;Peppers x 2&#10;Wraps x 1 pack"></textarea>
+      <label class="meal-favourite-check"><input id="mealSaveFavourite" type="checkbox"> Save this meal as a favourite</label>
+      <div class="dialog-actions"><button type="button" id="cancelMeal" class="secondary-button">Cancel</button><button type="submit" class="primary-button">Save meal</button></div>
+    </form>
+  </dialog>
+  <dialog id="favouritesDialog" class="app-dialog">
+    <div class="dialog-heading"><div><span class="section-icon">★</span><h2>Favourite meals</h2></div><button type="button" class="dialog-close" id="closeFavourites">×</button></div>
+    <div id="favouritesList" class="favourites-list"></div>
+  </dialog>
   <dialog id="manageListsDialog" class="modal">
     <div class="modal-card"><div class="modal-title"><h2>Manage your lists</h2><button class="icon-button close" id="closeManageLists" type="button" aria-label="Close">×</button></div>
       <p class="modal-note manage-lists-intro">Choose whether each list is shared with your household or private to you.</p>
@@ -166,6 +190,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.5.16"></script>
+  <script src="./app.js?v=1.6.0"></script>
 </body>
 </html>
