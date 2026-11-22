@@ -68,6 +68,17 @@ function activityDescription(a){
  return verb[a.event_type]||`updated ${item}`;
 }
 function renderActivity(){const host=$("#activity");host.innerHTML="";state.activity.slice(0,12).forEach(a=>{const row=document.createElement("div");row.className="activity-row";const av=document.createElement("span");av.className="activity-avatar";av.textContent=(a.display_name||"?")[0];const cp=document.createElement("span");cp.className="activity-copy";const b=document.createElement("strong");b.textContent=(a.display_name||"Someone")+" ";cp.append(b,document.createTextNode(activityDescription(a)));const tm=document.createElement("span");tm.className="activity-time";tm.textContent=new Date(a.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});row.append(av,cp,tm);host.append(row);});if(!state.activity.length)host.textContent="Your list activity will appear here.";}
+async function refreshActivity(){
+ if(!state.user||!state.householdId)return;
+ const [{data,error},{data:members}] = await Promise.all([
+  db.from("activity_events").select("*").eq("household_id",state.householdId).order("created_at",{ascending:false}).limit(12),
+  db.from("household_members").select("user_id,display_name").eq("household_id",state.householdId)
+ ]);
+ if(error||!data)return;
+ const names=Object.fromEntries((members||[]).map(x=>[x.user_id,x.display_name]));
+ state.activity=data.map(x=>({...x,display_name:names[x.actor_id]||"Household member"}));
+ renderActivity();
+}
 async function load(){
  const [ir,mr,ar,hr]=await Promise.all([
   db.from("shopping_items").select("*").eq("household_id",state.householdId).order("created_at"),
@@ -158,9 +169,10 @@ function wire(){
   $("#shareHint").classList.toggle("hidden",tab!=="list");
   $(".list-panel").classList.toggle("hidden",tab!=="list");
   $(".people-strip").classList.toggle("hidden",tab==="more");
+  if(tab==="history")refreshActivity();
  });
 }
-async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+async function init(){theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible")refreshActivity();},5000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   const hadController=!!navigator.serviceWorker.controller;
   if(hadController)navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
   navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
