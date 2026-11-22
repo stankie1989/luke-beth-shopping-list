@@ -1,11 +1,9 @@
-# Luke & Beth's Shopping List — Version 1.5.6
+# Luke & Beth's Shopping List — Version 1.5.7
 
 ## Fix
-- Corrected the shopping-list card styling in light mode.
-- The card now uses a light surface and dark readable text.
-- Quantity controls and delete icons now use matching light-mode colours.
-- Kept the dark-mode styling unchanged.
-- Updated stylesheet/script asset versions and service-worker cache version.
+- Improved contrast on the “Ready to share” status card in light mode.
+- The neutral status card now uses dark readable title and description text, with a matching symbol.
+- Dark mode and other status-card states are unchanged.
 
 ## Deployment
 Replace the nine app files in GitHub with these files and commit to `main`.
