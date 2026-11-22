@@ -114,3 +114,21 @@ button:disabled{opacity:.55;cursor:wait}
 :root[data-theme="light"] .list-status-card.status-neutral .status-copy strong{color:#172044}
 :root[data-theme="light"] .list-status-card.status-neutral .status-copy span{color:#596684}
 :root[data-theme="light"] .list-status-card.status-neutral .status-symbol{background:#d5def7;color:#26365f}
+
+/* v1.5.8: force readable contrast on neutral share status in light theme */
+html[data-theme="light"] #listStatusCard.status-neutral{
+  background:linear-gradient(120deg,#eef2ff,#e7edff)!important;
+  border-color:#cbd5f0!important;
+  color:#172044!important;
+}
+html[data-theme="light"] #listStatusCard.status-neutral .status-copy,
+html[data-theme="light"] #listStatusCard.status-neutral .status-copy strong{
+  color:#172044!important;
+}
+html[data-theme="light"] #listStatusCard.status-neutral .status-copy span{
+  color:#596684!important;
+}
+html[data-theme="light"] #listStatusCard.status-neutral .status-symbol{
+  background:#d5def7!important;
+  color:#26365f!important;
+}

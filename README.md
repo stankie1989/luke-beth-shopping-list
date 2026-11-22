@@ -1,9 +1,9 @@
-# Luke & Beth's Shopping List — Version 1.5.7
+# Luke & Beth's Shopping List — Version 1.5.8
 
 ## Fix
-- Improved contrast on the “Ready to share” status card in light mode.
-- The neutral status card now uses dark readable title and description text, with a matching symbol.
-- Dark mode and other status-card states are unchanged.
+- Applied a more specific light-theme contrast rule directly to the Ready to share status card.
+- Explicitly styles the card background, title, description and icon using high-specificity selectors and `!important` so generic status styles cannot override them.
+- Dark theme remains unchanged.
 
 ## Deployment
 Replace the nine app files in GitHub with these files and commit to `main`.
