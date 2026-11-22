@@ -22,8 +22,30 @@ function showApp(){
  $("#partnerPerson").classList.toggle("not-joined",!state.partner);
  theme();renderHousehold();
 }
-function renderItems(){const host=$("#items");host.innerHTML="";state.items.forEach(item=>{const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"");const c=document.createElement("input");c.type="checkbox";c.className="check";c.checked=item.is_bought;c.addEventListener("change",()=>update(item,{is_bought:c.checked}));const n=document.createElement("div");n.className="item-name";n.textContent=item.name;const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const p=document.createElement("button");p.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});p.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,p);const more=document.createElement("button");more.className="more-item";more.textContent="⋯";more.onclick=async()=>{const a=prompt(`For ${item.name}, type a new name or REMOVE:`);if(!a)return;let r=a.trim().toLowerCase()==="remove"?await db.from("shopping_items").delete().eq("id",item.id):await db.from("shopping_items").update({name:a.trim().slice(0,80),updated_by:state.user.id}).eq("id",item.id);if(r.error)toast(r.error.message);};row.append(c,n,q,more);host.append(row);});const left=state.items.filter(x=>!x.is_bought).length;$("#remainingCount").textContent=`${left} item${left===1?"":"s"} remaining`;}
-async function update(item,patch){const {error}=await db.from("shopping_items").update({...patch,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",item.id);if(error)toast("Couldn't save: "+error.message);}
+function renderItems(){
+ const host=$("#items");host.innerHTML="";
+ state.items.forEach(item=>{
+  const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"");
+  const c=document.createElement("input");c.type="checkbox";c.className="check";c.checked=!!item.is_bought;c.setAttribute("aria-label",`Mark ${item.name} as ${item.is_bought?"not bought":"bought"}`);c.addEventListener("change",()=>update(item,{is_bought:c.checked}));
+  const n=document.createElement("button");n.type="button";n.className="item-name";n.textContent=item.name;n.title="Tap to edit item name";n.addEventListener("click",async()=>{const value=prompt("Edit item name:",item.name);if(value===null)return;const name=value.trim();if(!name)return toast("Item name can't be empty.");if(name===item.name)return;await update(item,{name:name.slice(0,80)});});
+  const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.type="button";m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const plus=document.createElement("button");plus.type="button";plus.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});plus.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,plus);
+  const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>removeItem(item);
+  row.append(c,n,q,del);host.append(row);
+ });
+ const left=state.items.filter(x=>!x.is_bought).length;$("#remainingCount").textContent=`${left} item${left===1?"":"s"} remaining`;
+}
+async function update(item,patch){
+ const previous={...item};Object.assign(item,patch);renderItems();
+ const {data,error}=await db.from("shopping_items").update({...patch,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",item.id).select("*").single();
+ if(error){Object.assign(item,previous);renderItems();toast("Couldn't save: "+error.message);return false;}
+ Object.assign(item,data);renderItems();return true;
+}
+async function removeItem(item){
+ if(!confirm(`Delete “${item.name}” from the list?`))return;
+ const previous=[...state.items];state.items=state.items.filter(x=>x.id!==item.id);renderItems();
+ const {error}=await db.from("shopping_items").delete().eq("id",item.id);
+ if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else toast("Item deleted.");
+}
 function renderActivity(){const host=$("#activity");host.innerHTML="";state.activity.slice(0,5).forEach(a=>{const row=document.createElement("div");row.className="activity-row";const av=document.createElement("span");av.className="activity-avatar";av.textContent=(a.display_name||"?")[0];const cp=document.createElement("span");cp.className="activity-copy";const b=document.createElement("strong");b.textContent=(a.display_name||"Someone")+" ";const verb={added:"added",updated:"updated",bought:"ticked off",unbought:"unticked",removed:"removed"}[a.event_type]||"changed";cp.append(b,document.createTextNode(`${verb} "${a.item_name}"`));const tm=document.createElement("span");tm.className="activity-time";tm.textContent=new Date(a.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});row.append(av,cp,tm);host.append(row);});if(!state.activity.length)host.textContent="Your list activity will appear here.";}
 async function load(){
  const [ir,mr,ar,hr]=await Promise.all([
@@ -107,5 +129,9 @@ function wire(){
  $("#moreSignOut").onclick=signOut;
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));b.classList.add("active");const more=b.dataset.tab==="more";$("#morePanel").classList.toggle("hidden",!more);$("#shareButton").classList.toggle("hidden",more);$("#shareHint").classList.toggle("hidden",more);if(b.dataset.tab!=="list"&&!more)toast("That section is planned for a later update.");});
 }
-async function init(){theme();wire();const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});}
+async function init(){theme();wire();const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+  const hadController=!!navigator.serviceWorker.controller;
+  if(hadController)navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
+  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+ }}
 init();
