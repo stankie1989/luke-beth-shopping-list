@@ -1,0 +1,18 @@
+{
+  "name": "Luke & Beth's Shopping List",
+  "short_name": "Our Shopping List",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080c1b",
+  "theme_color": "#080c1b",
+  "description": "A shared shopping list for Luke and Beth.",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
