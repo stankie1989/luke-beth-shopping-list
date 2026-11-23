@@ -41,3 +41,10 @@ Automatic smart category inference, built from confirmed 1.7.13.3.
 - Online recipes can be saved to household favourites.
 - Quick links search BBC Good Food and Slimming World-style recipes using the ingredients entered.
 - No database migration or SQL required.
+
+
+## Version 1.7.16.2
+- Refined household dashboard heading and date layout for narrow mobile screens.
+- Dashboard dinner cards now use the same meal artwork as the Menu Planner.
+- Corrected bottom navigation to use four equal-width columns.
+- No database or SQL changes.
