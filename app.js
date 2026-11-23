@@ -570,7 +570,7 @@ async function loadMenu(){
   db.from("menu_entries").select("*").eq("household_id",state.householdId).lt("entry_date",today).eq("is_completed",false).order("entry_date")
  ]);
  if(current.error||missed.error){console.warn(current.error||missed.error);toast("Couldn't load menu tracking. Check the 1.7.0 database update.");return;}
- state.menuEntries=current.data||[];state.missedMeals=missed.data||[];renderMenu();
+ state.menuEntries=current.data||[];state.missedMeals=missed.data||[];renderMenu();if($("#dashboardPanel")&&!$("#dashboardPanel").classList.contains("hidden"))renderDashboard();
 }
 async function loadMenuFavourites(){
  const {data,error}=await db.from("menu_favourites").select("*").eq("household_id",state.householdId).order("name");
@@ -833,6 +833,27 @@ async function deleteCategory(name){
 }
 const CATEGORY_ACCENT_COLORS=["#55b6e8","#e58b55","#69b987","#bd91ed","#e17b9b","#c5a65b","#4ebbb2","#df9c55","#8c9ee8","#98a2b3"];
 function categoryAccentColor(category){const i=Math.max(0,SHOP_CATEGORIES.indexOf(category));return CATEGORY_ACCENT_COLORS[i%CATEGORY_ACCENT_COLORS.length];}
+function renderDashboard(){
+ const today=new Date(),tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
+ const todayISO=localISO(today),tomorrowISO=localISO(tomorrow);
+ const total=state.items.length,bought=state.items.filter(x=>x.is_bought).length,remaining=total-bought;
+ $("#dashboardDate").textContent=today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+ $("#dashTotal").textContent=String(total);$("#dashBought").textContent=`${bought} bought`;
+ $("#dashRemaining").textContent=String(remaining);
+ const host=$("#dashboardCategories");host.innerHTML="";
+ const cats=new Map();
+ state.items.filter(x=>!x.is_bought).forEach(item=>{const cat=item.category||guessShoppingCategory(item.name)||"Other";cats.set(cat,(cats.get(cat)||0)+1);});
+ if(!cats.size){const empty=document.createElement("p");empty.className="dashboard-muted";empty.textContent="Nothing left to buy — your list is all caught up.";host.append(empty);}
+ else [...cats.entries()].sort((a,b)=>b[1]-a[1]).forEach(([cat,count])=>{
+  const row=document.createElement("div");row.className="dashboard-category-row";
+  const name=document.createElement("span");name.textContent=cat;
+  const track=document.createElement("span");track.className="dashboard-category-track";
+  const fill=document.createElement("span");fill.className="dashboard-category-fill";fill.style.width=`${Math.max(8,Math.round(count/remaining*100))}%`;fill.style.background=categoryAccentColor(cat);track.append(fill);
+  const value=document.createElement("strong");value.textContent=String(count);row.append(name,track,value);host.append(row);
+ });
+ const setMeal=(id,date)=>{const meal=state.menuEntries.find(x=>x.entry_date===date&&x.meal_type==="dinner");const target=$(id);target.textContent=meal?(meal.meal_name||meal.title||"Dinner planned"):"No dinner planned yet";};
+ setMeal("#dashboardTodayMeal",todayISO);setMeal("#dashboardTomorrowMeal",tomorrowISO);
+}
 function renderItems(){
  const host=$("#items");host.innerHTML="";const modeHost=$("#shoppingModeItems");if(modeHost)modeHost.innerHTML="";
  const ordered=state.showShoppingCategories?SHOP_CATEGORIES.flatMap(cat=>state.items.filter(x=>(x.category||guessShoppingCategory(x.name))===cat)):state.items;
@@ -860,7 +881,7 @@ function renderItems(){
    });
   }else ordered.forEach(item=>modeHost.append(buildItemRow(item,true)));
  }
- const left=state.items.filter(x=>!x.is_bought).length;$("#remainingCount").textContent=`${left} item${left===1?"":"s"} remaining`;
+ const left=state.items.filter(x=>!x.is_bought).length;if($("#dashboardPanel")&&!$("#dashboardPanel").classList.contains("hidden"))renderDashboard();$("#remainingCount").textContent=`${left} item${left===1?"":"s"} remaining`;
  if($("#shoppingModeCount")){$("#shoppingModeCount").textContent=`${left} item${left===1?"":"s"} to buy` ;$("#shoppingModeRemaining").textContent=`${left} remaining`;}
 }
 
@@ -868,7 +889,7 @@ function setShoppingMode(enabled){
  state.shoppingMode=enabled;$("#appShell").classList.toggle("shopping-mode-active",enabled);
  $(".topbar").classList.toggle("hidden",enabled);$(".people-strip").classList.toggle("hidden",enabled);
  $(".list-panel").classList.toggle("hidden",enabled);$("#shareButton").classList.toggle("hidden",enabled);$("#shareHint").classList.toggle("hidden",enabled);
- $("#historyPanel").classList.add("hidden");$("#notificationsPanel").classList.add("hidden");$("#menuPanel").classList.add("hidden");$("#morePanel").classList.add("hidden");
+ $("#historyPanel").classList.add("hidden");$("#dashboardPanel").classList.add("hidden");$("#notificationsPanel").classList.add("hidden");$("#menuPanel").classList.add("hidden");$("#morePanel").classList.add("hidden");
  $(".bottom-nav").classList.toggle("hidden",enabled);$("#shoppingModeScreen").classList.toggle("hidden",!enabled);
  if(enabled)renderItems();
 }
@@ -894,7 +915,7 @@ function activityDescription(a){
  if(changes.length)return changes.join(" and ");
  return verb[a.event_type]||`updated ${item}`;
 }
-function renderActivity(){const host=$("#activity");host.innerHTML="";state.activity.slice(0,12).forEach(a=>{const row=document.createElement("div");row.className="activity-row";const av=document.createElement("span");av.className="activity-avatar";av.textContent=(a.display_name||"?")[0];const cp=document.createElement("span");cp.className="activity-copy";const b=document.createElement("strong");b.textContent=(a.display_name||"Someone")+" ";cp.append(b,document.createTextNode(activityDescription(a)));const tm=document.createElement("span");tm.className="activity-time";tm.textContent=new Date(a.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});row.append(av,cp,tm);host.append(row);});if(!state.activity.length)host.textContent="Your list activity will appear here.";}
+function renderActivity(){const host=$("#activity");host.innerHTML="";state.activity.slice(0,12).forEach(a=>{const row=document.createElement("div");row.className="activity-row";const av=document.createElement("span");av.className="activity-avatar";av.textContent=(a.display_name||"?")[0];const cp=document.createElement("span");cp.className="activity-copy";const b=document.createElement("strong");b.textContent=(a.display_name||"Someone")+" ";cp.append(b,document.createTextNode(activityDescription(a)));const tm=document.createElement("span");tm.className="activity-time";tm.textContent=new Date(a.created_at).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});row.append(av,cp,tm);host.append(row);});if(!state.activity.length)host.textContent="Your list activity will appear here.";const dash=$("#dashboardActivity");if(dash)dash.innerHTML=host.innerHTML;}
 async function refreshActivity(){
  if(!state.user||!state.householdId)return;
  const [{data,error},{data:members}] = await Promise.all([
@@ -1060,10 +1081,12 @@ function wire(){
  $("#cancelRenameCategory").onclick=()=>{$("#renameCategoryDialog").close();renamingCategory=null;};$("#itemCategoryDialog").addEventListener("cancel",()=>{categoryEditingItem=null;});$("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
  $("#closeDeleteItem").onclick=closeDeleteItem;$("#cancelDeleteItem").onclick=closeDeleteItem;$("#confirmDeleteItem").onclick=confirmDeleteShoppingItem;$("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};$("#showShoppingCategories").onchange=e=>{state.showShoppingCategories=e.target.checked;localStorage.setItem(CATEGORY_KEY,String(state.showShoppingCategories));renderItems();};
  $("#moreSignOut").onclick=signOut;
+ document.querySelectorAll("[data-dashboard-tab]").forEach(b=>b.onclick=()=>document.querySelector('.nav-item[data-tab="list"]').click());
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
   const tab=b.dataset.tab;
   document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===b));
   $("#morePanel").classList.toggle("hidden",tab!=="more");
+  $("#dashboardPanel").classList.toggle("hidden",tab!=="dashboard");
   $("#historyPanel").classList.toggle("hidden",tab!=="history");
   $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
   $("#menuPanel").classList.toggle("hidden",tab!=="menu");
@@ -1079,13 +1102,14 @@ function wire(){
   $(".list-panel").classList.toggle("hidden",tab!=="list");
   $(".people-strip").classList.toggle("hidden",tab==="more");
   if(tab==="history")refreshActivity();
+  if(tab==="dashboard"){renderDashboard();refreshActivity();if(state.menuEntries.length===0)loadMenu();}
   if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
  });
 }
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.15.5",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.16",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

@@ -581,3 +581,27 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .meal-recipe-steps li::marker{font-weight:800;color:#70b9ff}
 .meal-recipe-steps li:nth-child(3n+2)::marker{color:#55d4b2}
 .meal-recipe-steps li:nth-child(3n)::marker{color:#b69aff}
+
+
+/* 1.7.16 household dashboard */
+.dashboard-panel{display:flex;flex-direction:column;gap:14px}
+.dashboard-date{font-size:.82rem;color:var(--muted);font-weight:650}
+.dashboard-summary-grid,.dashboard-meals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dashboard-stat,.dashboard-card{background:var(--surface-2,var(--panel));border:1px solid var(--line);border-radius:17px;padding:14px;min-width:0}
+.dashboard-stat{display:flex;flex-direction:column;gap:4px}
+.dashboard-stat>span,.dashboard-stat small,.dashboard-muted{color:var(--muted);font-size:.82rem}
+.dashboard-stat strong{font-size:1.8rem;line-height:1.1}
+.dashboard-card-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.dashboard-card-heading h3{font-size:1rem;margin:0}
+.dashboard-card-heading>span{font-size:1.2rem}
+.dashboard-category-list{display:flex;flex-direction:column;gap:10px}
+.dashboard-category-row{display:grid;grid-template-columns:minmax(75px, .8fr) minmax(50px,1fr) 22px;align-items:center;gap:9px;font-size:.86rem}
+.dashboard-category-row>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-category-row strong{text-align:right;font-variant-numeric:tabular-nums}
+.dashboard-category-track{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.dashboard-category-fill{display:block;height:100%;border-radius:99px}
+.dashboard-meal-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+.dashboard-meal-content{font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.dashboard-muted{margin:0;line-height:1.45}
+.text-button{border:0;background:transparent;color:var(--accent);font-weight:700;padding:4px 0;font:inherit;font-size:.8rem;white-space:nowrap}
+@media(max-width:380px){.dashboard-summary-grid,.dashboard-meals-grid{gap:7px}.dashboard-stat,.dashboard-card{padding:11px}.dashboard-stat strong{font-size:1.55rem}}
