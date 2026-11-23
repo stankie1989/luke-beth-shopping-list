@@ -510,3 +510,8 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .item-category-trigger{width:27px;height:27px;min-width:27px;padding:0;border:1px solid color-mix(in srgb,var(--category-accent) 45%,transparent);border-radius:50%;background:color-mix(in srgb,var(--category-accent) 15%,transparent);color:var(--category-accent);font-size:12px;font-weight:850;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-shadow:none}
 .item-category-trigger:active{background:color-mix(in srgb,var(--category-accent) 25%,transparent);transform:scale(.96)}
 @media(max-width:380px){.item-category-trigger{width:25px;height:25px;min-width:25px;font-size:11px}}
+
+/* 1.7.13.2 Shopping Mode category headings: subtle colour accent */
+.shopping-mode .shopping-category-heading,
+#shoppingModeItems .shopping-category-heading,
+.shopping-category-heading{border-left:4px solid var(--category-accent);padding-left:13px;background:transparent;border-top:0;border-right:0;border-bottom:0;border-radius:0 8px 8px 0;color:var(--text)}

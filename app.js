@@ -111,7 +111,7 @@ function buildItemRow(item,shopping=false){
   const addedAt=item.created_at?new Date(item.created_at).getTime():0;const isNew=Number.isFinite(addedAt)&&addedAt>0&&(Date.now()-addedAt)<2*60*60*1000;n.classList.toggle("is-new",isNew);n.setAttribute("aria-label",isNew?`${item.name}, newly added`:item.name);n.title=isNew?"Added in the last 2 hours · Tap to edit":"Tap to edit item name";
   n.addEventListener("click",()=>openEditItem(item));
   const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.type="button";m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const plus=document.createElement("button");plus.type="button";plus.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});plus.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,plus);
-  const category=document.createElement("button");category.type="button";category.className="item-category-trigger";category.textContent="C";const currentCategory=item.category||guessShoppingCategory(item.name);const categoryColors=["#55b6e8","#e58b55","#69b987","#bd91ed","#e17b9b","#c5a65b","#4ebbb2","#df9c55","#8c9ee8","#98a2b3"];const categoryIndex=Math.max(0,SHOP_CATEGORIES.indexOf(currentCategory));category.style.setProperty("--category-accent",categoryColors[categoryIndex%categoryColors.length]);category.setAttribute("aria-label",`Change category for ${item.name}`);category.title=`Category: ${currentCategory} · Tap to change`;category.onclick=()=>openItemCategoryPicker(item);
+  const category=document.createElement("button");category.type="button";category.className="item-category-trigger";category.textContent="C";const currentCategory=item.category||guessShoppingCategory(item.name);category.style.setProperty("--category-accent",categoryAccentColor(currentCategory));category.setAttribute("aria-label",`Change category for ${item.name}`);category.title=`Category: ${currentCategory} · Tap to change`;category.onclick=()=>openItemCategoryPicker(item);
   const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>openDeleteItem(item);row.append(c,n,q,category,del);
  }else{const q=document.createElement("span");q.className="shopping-mode-quantity";q.textContent=item.quantity>1?`×${item.quantity}`:"";row.append(c,n,q);}
  return row;
@@ -742,6 +742,8 @@ async function deleteCategory(name){
  SHOP_CATEGORIES=SHOP_CATEGORIES.filter(x=>x!==name);learnedCategoryRules=learnedCategoryRules.filter(x=>x.category!==name);
  renderManageCategories();renderItems();toast(`${name} deleted. Its items moved to Other.`);
 }
+const CATEGORY_ACCENT_COLORS=["#55b6e8","#e58b55","#69b987","#bd91ed","#e17b9b","#c5a65b","#4ebbb2","#df9c55","#8c9ee8","#98a2b3"];
+function categoryAccentColor(category){const i=Math.max(0,SHOP_CATEGORIES.indexOf(category));return CATEGORY_ACCENT_COLORS[i%CATEGORY_ACCENT_COLORS.length];}
 function renderItems(){
  const host=$("#items");host.innerHTML="";const modeHost=$("#shoppingModeItems");if(modeHost)modeHost.innerHTML="";
  const ordered=state.showShoppingCategories?SHOP_CATEGORIES.flatMap(cat=>state.items.filter(x=>(x.category||guessShoppingCategory(x.name))===cat)):state.items;
@@ -750,7 +752,7 @@ function renderItems(){
    const items=ordered.filter(x=>(x.category||guessShoppingCategory(x.name))===cat);
    if(!items.length)return;
    const section=document.createElement("section");section.className="shopping-category-section";
-   const heading=document.createElement("h3");heading.className="shopping-category-heading";heading.textContent=cat;
+   const heading=document.createElement("h3");heading.className="shopping-category-heading";heading.textContent=cat;heading.style.setProperty("--category-accent",categoryAccentColor(cat));
    const rows=document.createElement("div");rows.className="shopping-category-items";
    items.forEach(item=>rows.append(buildItemRow(item)));
    section.append(heading,rows);host.append(section);
@@ -762,7 +764,7 @@ function renderItems(){
     const items=ordered.filter(x=>(x.category||guessShoppingCategory(x.name))===cat);
     if(!items.length)return;
     const section=document.createElement("section");section.className="shopping-category-section";
-    const heading=document.createElement("h3");heading.className="shopping-category-heading";heading.textContent=cat;
+    const heading=document.createElement("h3");heading.className="shopping-category-heading";heading.textContent=cat;heading.style.setProperty("--category-accent",categoryAccentColor(cat));
     const rows=document.createElement("div");rows.className="shopping-category-items";
     items.forEach(item=>rows.append(buildItemRow(item,true)));
     section.append(heading,rows);modeHost.append(section);
@@ -987,7 +989,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.13.1",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.13.2",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

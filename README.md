@@ -1,7 +1,8 @@
-# Luke & Beth's Shared Shopping List — v1.7.13.1
+# Luke & Beth's Shared Shopping List — v1.7.13.2
 
-Small visual refinement based on 1.7.13.
-- Replaces the large category chevron button with a compact circular coloured C marker.
-- Marker colour follows the category's position in the shared category list.
-- Tap still opens the same category picker; category management and remembered category rules are unchanged.
+Shopping Mode category heading styling, based on confirmed 1.7.13.1.
+- Applies Option 2: a subtle coloured left border to each category heading.
+- Uses the same category accent colour palette as the main shopping list category markers.
+- Keeps the existing dark theme, typography and spacing restrained.
+- Applies to category headings in both grouped list render surfaces.
 - No SQL changes.
