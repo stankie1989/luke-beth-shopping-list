@@ -121,7 +121,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.1</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.5</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -177,6 +177,27 @@
       <label class="meal-favourite-check"><input id="mealSaveFavourite" type="checkbox"> Save this meal as a favourite</label>
       <div class="dialog-actions"><button type="button" id="cancelMeal" class="secondary-button">Cancel</button><button type="submit" class="primary-button">Save meal</button></div>
     </form>
+  </dialog>
+  <dialog id="mealSourceDialog" class="app-dialog">
+    <div class="dialog-heading"><div><span class="section-icon">🍽️</span><h2 id="mealSourceTitle">Add a meal</h2></div><button type="button" class="dialog-close" id="closeMealSource">×</button></div>
+    <p class="list-picker-intro">How would you like to add this meal?</p>
+    <div class="meal-source-options">
+      <button type="button" class="meal-source-option" id="mealSourceNew"><span>＋</span><strong>Create a new meal</strong><small>Enter a name and ingredients</small></button>
+      <button type="button" class="meal-source-option" id="mealSourceFavourite"><span>★</span><strong>Choose a favourite</strong><small>Pick from your saved meals</small></button>
+    </div>
+    <div class="dialog-actions"><button type="button" id="cancelMealSource" class="secondary-button">Cancel</button></div>
+  </dialog>
+  <dialog id="dayFavouritesDialog" class="app-dialog">
+    <div class="dialog-heading"><div><span class="section-icon">★</span><h2>Choose a favourite</h2></div><button type="button" class="dialog-close" id="closeDayFavourites">×</button></div>
+    <p class="list-picker-intro">Choose a saved meal to preview before adding it.</p>
+    <div id="dayFavouriteList" class="day-favourite-list"></div>
+  </dialog>
+  <dialog id="favouritePreviewDialog" class="app-dialog">
+    <div class="dialog-heading"><div><span class="section-icon">🍽️</span><h2>Meal preview</h2></div><button type="button" class="dialog-close" id="closeFavouritePreview">×</button></div>
+    <div class="favourite-preview-heading"><span id="favouritePreviewIcon" aria-hidden="true">🍽️</span><h3 id="favouritePreviewName"></h3></div>
+    <h4 class="favourite-preview-subtitle">Ingredients and quantities</h4>
+    <div id="favouritePreviewIngredients" class="favourite-preview-ingredients"></div>
+    <div class="dialog-actions"><button type="button" id="backToDayFavourites" class="secondary-button">Back</button><button type="button" id="addPreviewedFavourite" class="primary-button">Add to this day</button></div>
   </dialog>
   <dialog id="mealIconPickerDialog" class="app-dialog meal-icon-picker-dialog">
     <div class="dialog-heading"><div><span class="section-icon">🎨</span><h2>Choose an illustration</h2></div><button type="button" class="dialog-close" id="closeMealIconPicker">×</button></div>

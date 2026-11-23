@@ -344,3 +344,20 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .favourite-remove{width:36px;height:36px;flex:none;border:1px solid #ff667044;border-radius:11px;background:#ff667018;color:#ff8994;font-size:22px;line-height:1}
 .favourite-remove:active{transform:scale(.96)}
 @media(max-width:390px){.favourite-actions{gap:5px}.favourite-actions .secondary-button{padding:9px 8px;font-size:11px}.favourite-remove{width:33px;height:33px}}
+
+
+/* v1.7.2 – add saved favourites directly to a selected menu day */
+.meal-source-options{display:grid;gap:10px;margin:16px 0}
+.meal-source-option{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;align-items:center;column-gap:12px;text-align:left;padding:15px;border:1px solid var(--line);border-radius:15px;background:var(--surface2);color:var(--text);min-height:76px}
+.meal-source-option>span{grid-row:1/3;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--surface);font-size:23px}
+.meal-source-option strong{font-size:14px}.meal-source-option small{font-size:12px;color:var(--muted);margin-top:3px}
+.day-favourite-list{display:grid;gap:9px;max-height:min(55dvh,480px);overflow-y:auto;overscroll-behavior:contain}
+.day-favourite-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--surface2);color:var(--text);text-align:left}
+.day-favourite-icon{font-size:27px;width:38px;text-align:center;flex:none}
+.day-favourite-info{display:grid;gap:4px;min-width:0;flex:1}.day-favourite-info strong{font-size:13px;overflow-wrap:anywhere}.day-favourite-info small{font-size:11px;color:var(--muted)}
+.day-favourite-arrow{font-size:25px;color:var(--muted)}
+.favourite-preview-heading{display:flex;align-items:center;gap:13px;padding:12px 0 18px}.favourite-preview-heading>span{font-size:42px}.favourite-preview-heading h3{font-size:19px;margin:0;overflow-wrap:anywhere}
+.favourite-preview-subtitle{font-size:13px;color:var(--muted);margin:4px 0 10px}
+.favourite-preview-ingredients{display:grid;gap:7px;max-height:min(42dvh,340px);overflow-y:auto}
+.favourite-ingredient-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:13px}
+.favourite-ingredient-row strong{color:var(--muted);font-size:12px;white-space:nowrap}

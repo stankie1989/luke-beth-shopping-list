@@ -1,4 +1,13 @@
-# Luke & Beth's Shopping List — Version 1.7.1
+# Luke & Beth's Shopping List — Version 1.7.5
+
+## Version 1.7.5 – Add favourite meals to a selected day
+- When adding a meal from a calendar day, choose to create a new meal or pick a saved favourite.
+- Browse saved favourites in a scrollable list.
+- Preview a favourite's saved ingredients and quantities before adding it.
+- Add the selected favourite directly to the day and meal slot that was tapped.
+- No database migration or SQL changes required.
+- Built from the confirmed working 1.7.1 baseline.
+
 
 ## iPhone improvements
 - Added an Apple Touch Icon so iPhone home-screen installation uses the shopping trolley app artwork instead of a generic initial.
