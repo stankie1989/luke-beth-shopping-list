@@ -684,3 +684,12 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .weather-detail strong{font-size:.9rem;font-variant-numeric:tabular-nums}
 .weather-attribution{font-size:.7rem;color:var(--muted);line-height:1.35}
 @media(max-width:360px){.weather-details{gap:5px}.weather-detail{padding:7px}.weather-detail strong{font-size:.82rem}}
+
+
+/* 1.7.18.1 prioritise Beth's finish time */
+.calendar-shift-row{grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center;padding:13px 14px}
+.calendar-shift-row>strong{font-size:1rem}
+.calendar-shift-finish{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.calendar-shift-finish>small{font-size:.62rem;letter-spacing:.09em;font-weight:800;color:var(--muted)}
+.calendar-shift-row .calendar-shift-finish-time{font-size:1.55rem;line-height:1.1;font-weight:850;color:var(--text);font-variant-numeric:tabular-nums}
+.calendar-shift-row .calendar-shift-hours{grid-column:1/-1;color:var(--muted);font-size:.76rem;font-weight:500;text-align:left}
