@@ -1051,6 +1051,12 @@ function wire(){
   $("#historyPanel").classList.toggle("hidden",tab!=="history");
   $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
   $("#menuPanel").classList.toggle("hidden",tab!=="menu");
+  const menuTabActive=tab==="menu";
+  const statusCard=$("#listStatusCard"),topFinder=$("#topMealFinderSlot"),finderButton=$("#openMealFinder"),menuActions=$(".menu-actions");
+  if(statusCard)statusCard.classList.toggle("hidden",menuTabActive);
+  if(topFinder)topFinder.classList.toggle("hidden",!menuTabActive);
+  if(menuTabActive&&topFinder&&finderButton)topFinder.append(finderButton);
+  else if(menuActions&&finderButton)menuActions.append(finderButton);
   $("#shareButton").classList.toggle("hidden",tab!=="list");
   $("#shareHint").classList.toggle("hidden",tab!=="list");
   $(".list-panel").classList.toggle("hidden",tab!=="list");

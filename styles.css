@@ -535,3 +535,8 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .meal-recipe-method{white-space:pre-line;line-height:1.6;color:var(--text)}
 .meal-recipe-source{font-size:.8rem;color:var(--muted)}
 .meal-recipe-link{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--surface);color:var(--accent);font-weight:650;text-decoration:none}
+
+/* 1.7.15.2: hide sharing status where it is not useful and promote meal finder on Menu */
+.logged-out #listStatusCard{display:none!important}
+.top-meal-finder-slot{margin:14px 0 10px}
+.top-meal-finder-slot .primary-button{width:100%;min-height:58px;border-radius:18px;font-size:1rem;font-weight:750;box-shadow:0 9px 24px #562be344}
