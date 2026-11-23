@@ -455,3 +455,15 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .swap-choice-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .swap-choice-actions button{min-height:52px;white-space:normal}
 .swap-choice-cancel{display:block;width:100%;margin-top:12px;padding:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:650}
+
+/* 1.7.11 smart shopping categories */
+.category-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}
+.category-toggle-row span{display:grid;gap:4px}
+.category-toggle-row small{color:var(--muted);font-size:.82rem}
+.category-toggle-row input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.shopping-category-section{margin:0 0 18px}
+.shopping-category-heading{font-size:.92rem;font-weight:750;letter-spacing:.02em;padding:9px 12px;margin:0 0 6px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.shopping-category-items{display:grid;gap:6px}
+.item-category-select{max-width:118px;min-width:0;padding:6px 4px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--muted);font-size:.72rem}
+.item{gap:8px}
+@media(max-width:420px){.item-category-select{max-width:88px;font-size:.66rem}.item-name{min-width:50px}}

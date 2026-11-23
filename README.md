@@ -1,9 +1,10 @@
-# Luke & Beth's Shared Shopping List — v1.7.10.4
+# Luke & Beth's Shared Shopping List — v1.7.11
 
-Meal slot and swap reliability update based on 1.7.10.3.
-- Only one meal can be added to a household/date/meal-type slot through normal add, favourite-add, and reschedule flows.
-- If copying a meal into an occupied slot, the only available choices are Swap or Cancel. No copy-alongside option.
-- If copying a day into an occupied day, the only available choices are Swap or Cancel.
-- Whole-day swaps stage source rows on a temporary date before moving destination rows, avoiding same-slot collisions during the swap.
-- Detects legacy duplicate entries in the same slot and blocks unsafe swaps rather than creating more duplicates.
-- No SQL migration required.
+Smart Shopping Categories, built from confirmed working 1.7.10.4.
+- Automatically guesses a supermarket category when a shopping item is added.
+- Existing uncategorised items are assigned a suggested category when the list loads.
+- Users can manually change an item's category.
+- More tab includes a Show categories toggle, stored per device.
+- When enabled, main list and Shopping Mode group items by category.
+- When disabled, the list returns to the original ungrouped layout.
+- Requires one Supabase migration adding nullable category column to shopping_items.
