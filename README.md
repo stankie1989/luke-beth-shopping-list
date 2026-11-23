@@ -1,4 +1,4 @@
-Luke & Beth Shared Shopping List — Version 1.7.18.2
+Luke & Beth Shared Shopping List — Version 1.7.18.3
 
 Update: colour-coded Beth’s shift finishing-time badges on the Dashboard. Green for finishes before 16:00, amber from 16:00 through 18:00, and red after 18:00. The full shift time remains visible beneath the highlighted finish time. No SQL or database changes required.
 
