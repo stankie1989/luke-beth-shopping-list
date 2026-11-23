@@ -540,3 +540,9 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .logged-out #listStatusCard{display:none!important}
 .top-meal-finder-slot{margin:14px 0 10px}
 .top-meal-finder-slot .primary-button{width:100%;min-height:58px;border-radius:18px;font-size:1rem;font-weight:750;box-shadow:0 9px 24px #562be344}
+
+/* 1.7.15.3: keep Menu-only visibility rules persistent during background status refreshes */
+.app-shell.menu-tab-active #listStatusCard,
+.app-shell.menu-tab-active #shareButton,
+.app-shell.menu-tab-active #shareHint,
+.app-shell.menu-tab-active #approvalCard{display:none!important}

@@ -1052,6 +1052,7 @@ function wire(){
   $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
   $("#menuPanel").classList.toggle("hidden",tab!=="menu");
   const menuTabActive=tab==="menu";
+  $("#appShell").classList.toggle("menu-tab-active",menuTabActive);
   const statusCard=$("#listStatusCard"),topFinder=$("#topMealFinderSlot"),finderButton=$("#openMealFinder"),menuActions=$(".menu-actions");
   if(statusCard)statusCard.classList.toggle("hidden",menuTabActive);
   if(topFinder)topFinder.classList.toggle("hidden",!menuTabActive);

@@ -1,3 +1,7 @@
+Luke & Beth Shared Shopping List — Version 1.7.15.3
+
+Fix: Menu tab now persistently hides the list status banner, Share with Beth button, share hint and approval card, even when background list-status refreshes run. The What can I cook? button remains at the top of Menu. No SQL required.
+
 Luke & Beth Shared Shopping List — Version 1.7.15.2
 
 Update: hides the list-change status banner on the login screen and Menu tab. The existing What can I cook? button is moved to a prominent full-width position at the top of Menu, and returns to its original location when leaving Menu. No database changes or SQL required.
