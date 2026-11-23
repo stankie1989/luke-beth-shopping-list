@@ -703,3 +703,8 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .calendar-shift-finish-amber>small,.calendar-shift-row .calendar-shift-finish-amber .calendar-shift-finish-time{color:#f4b740}
 .calendar-shift-finish-red{background:rgba(240,107,112,.13);border-color:rgba(240,107,112,.3)}
 .calendar-shift-finish-red>small,.calendar-shift-row .calendar-shift-finish-red .calendar-shift-finish-time{color:#f47a80}
+
+/* Beth pickup colour threshold settings */
+.pickup-colour-settings{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:10px 14px;margin:12px 0}
+.pickup-colour-settings label{font-weight:650}
+.pickup-colour-settings input{width:100%;min-width:0;box-sizing:border-box}

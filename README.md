@@ -1,4 +1,4 @@
-Luke & Beth Shared Shopping List — Version 1.7.18.3
+Luke & Beth Shared Shopping List — Version 1.7.18.4
 
 Update: colour-coded Beth’s shift finishing-time badges on the Dashboard. Green for finishes before 16:00, amber from 16:00 through 18:00, and red after 18:00. The full shift time remains visible beneath the highlighted finish time. No SQL or database changes required.
 
@@ -70,3 +70,9 @@ Automatic smart category inference, built from confirmed 1.7.13.3.
 - Displays matching Beth shift events for the next 30 days and their start/finish times.
 - Calendar access is optional; shopping list and menu features remain unchanged.
 - Requires Google OAuth and Supabase Edge Function setup; no additional SQL is required beyond the private token table already created.
+
+
+### 1.7.18.4 – Adjustable pickup colour thresholds
+- Added More settings for Beth pickup badge colour cutoffs.
+- Defaults remain green before 16:00, amber through 18:00, red after 18:00.
+- Preferences are saved locally on each device; no database or SQL changes.

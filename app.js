@@ -3,6 +3,10 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
+const PICKUP_COLOUR_KEY="lb-pickup-colour-times";
+const pickupColourDefaults={greenUntil:"16:00",amberUntil:"18:00"};
+function getPickupColourTimes(){try{return {...pickupColourDefaults,...JSON.parse(localStorage.getItem(PICKUP_COLOUR_KEY)||"{}")};}catch{return {...pickupColourDefaults};}}
+let pickupColourTimes=getPickupColourTimes();
 const state={calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
@@ -851,7 +855,7 @@ function renderCalendarShifts(){
   const finishBlock=document.createElement("div");finishBlock.className="calendar-shift-finish";
   if(shift.end?.includes("T")&&!Number.isNaN(end.getTime())){
    const finishMinutes=end.getHours()*60+end.getMinutes();
-   const finishTone=finishMinutes<16*60?"green":finishMinutes<=18*60?"amber":"red";
+   const greenUntil=pickupColourTimes.greenUntil.split(":").map(Number);const amberUntil=pickupColourTimes.amberUntil.split(":").map(Number);const greenLimit=greenUntil[0]*60+greenUntil[1];const amberLimit=amberUntil[0]*60+amberUntil[1];const finishTone=finishMinutes<greenLimit?"green":finishMinutes<=amberLimit?"amber":"red";
    finishBlock.classList.add(`calendar-shift-finish-${finishTone}`);
   }
   const finishLabel=document.createElement("small");finishLabel.textContent="FINISHES";
@@ -1112,7 +1116,7 @@ function renderHousehold(){
   row.append(avatar,name,role);host.append(row);
  });
  if(state.members.length<2){const pending=document.createElement("p");pending.className="more-description";pending.textContent="Your partner hasn't joined yet.";host.append(pending);}
- $("#moreThemeSelect").value=state.theme;$("#showShoppingCategories").checked=!!state.showShoppingCategories;
+ $("#moreThemeSelect").value=state.theme;$("#showShoppingCategories").checked=!!state.showShoppingCategories;$("#pickupGreenUntil").value=pickupColourTimes.greenUntil;$("#pickupAmberUntil").value=pickupColourTimes.amberUntil;
 }
 function updatePresence(){
  const presence=state.channel?.presenceState?.()||{};
@@ -1197,6 +1201,8 @@ function wire(){
  $("#cancelRenameCategory").onclick=()=>{$("#renameCategoryDialog").close();renamingCategory=null;};$("#itemCategoryDialog").addEventListener("cancel",()=>{categoryEditingItem=null;});$("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
  $("#closeDeleteItem").onclick=closeDeleteItem;$("#cancelDeleteItem").onclick=closeDeleteItem;$("#confirmDeleteItem").onclick=confirmDeleteShoppingItem;$("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};$("#showShoppingCategories").onchange=e=>{state.showShoppingCategories=e.target.checked;localStorage.setItem(CATEGORY_KEY,String(state.showShoppingCategories));renderItems();};
  $("#moreSignOut").onclick=signOut;
+ function savePickupColourTimes(){const green=$("#pickupGreenUntil").value,amber=$("#pickupAmberUntil").value;if(!green||!amber)return;const toMin=v=>{const [h,m]=v.split(":").map(Number);return h*60+m;};if(toMin(green)>=toMin(amber)){msg("#pickupColourStatus","Green cutoff must be earlier than amber cutoff.",true);return;}pickupColourTimes={greenUntil:green,amberUntil:amber};localStorage.setItem(PICKUP_COLOUR_KEY,JSON.stringify(pickupColourTimes));$("#pickupColourStatus").textContent=`Saved on this device · Green until ${green}, amber until ${amber}.`;renderCalendarShifts();}
+ $("#pickupGreenUntil").onchange=savePickupColourTimes;$("#pickupAmberUntil").onchange=savePickupColourTimes;$("#resetPickupColours").onclick=()=>{pickupColourTimes={...pickupColourDefaults};localStorage.setItem(PICKUP_COLOUR_KEY,JSON.stringify(pickupColourTimes));$("#pickupGreenUntil").value=pickupColourTimes.greenUntil;$("#pickupAmberUntil").value=pickupColourTimes.amberUntil;$("#pickupColourStatus").textContent="Default times restored: 16:00 and 18:00.";renderCalendarShifts();};
  document.querySelectorAll("[data-dashboard-tab]").forEach(b=>b.onclick=()=>document.querySelector('.nav-item[data-tab="list"]').click());
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
   const tab=b.dataset.tab;
