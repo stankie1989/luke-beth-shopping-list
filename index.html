@@ -226,7 +226,7 @@
     <div class="dialog-heading"><div><span class="section-icon">★</span><h2>Favourite meals</h2></div><button type="button" class="dialog-close" id="closeFavourites">×</button></div>
     <label class="favourite-search-label" for="favouriteSearch">Search meals or ingredients</label>
     <input id="favouriteSearch" type="search" class="favourite-search" placeholder="e.g. chicken, pasta, potatoes…">
-    <div class="favourite-filter-row"><label for="favouriteCategoryFilter">Category</label><select id="favouriteCategoryFilter"><option value="all">All categories</option><option>Breakfast</option><option>Chicken</option><option>Meat</option><option>Fish</option><option>Pasta & rice</option><option>Vegetarian</option><option>Quick meals</option><option>Desserts</option><option>Other</option></select></div>
+    <div class="favourite-filter-row"><label for="favouriteCategoryFilter">Category</label><select id="favouriteCategoryFilter"><option value="all">All categories</option></select><button type="button" class="secondary-button compact" id="manageFavouriteCategories">Manage</button></div>
     <div id="favouritesList" class="favourites-list"></div>
   </dialog>
   <dialog id="manageListsDialog" class="modal">
@@ -243,6 +243,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.7"></script>
+  <script src="./app.js?v=1.7.8"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Luke & Beth's Shared Shopping List — v1.7.7
+# Luke & Beth's Shared Shopping List — v1.7.8
 
 This build starts from the confirmed working v1.7.6 baseline.
 

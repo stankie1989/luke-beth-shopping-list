@@ -389,3 +389,8 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .favourite-row-content small{font-size:10px;color:var(--muted)}
 .favourite-category-select{max-width:112px;min-width:0;font-size:11px;padding:7px 5px}
 @media(max-width:430px){.favourite-row{flex-wrap:wrap}.favourite-row-content{min-width:calc(100% - 65px)}.favourite-category-select{margin-left:50px;flex:1;max-width:none}.favourite-actions{margin-left:auto}}
+
+/* 1.7.8 shared favourite category controls */
+.favourite-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.favourite-filter-row select{flex:1;min-width:130px}
+#manageFavouriteCategories{white-space:nowrap}
