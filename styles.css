@@ -723,3 +723,21 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .dashboard-date-time .dashboard-date{align-self:auto;white-space:nowrap}
 .dashboard-clock{display:inline-flex;align-items:center;justify-content:center;min-width:76px;padding:5px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2,var(--panel));color:var(--accent);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:1.05rem;font-weight:800;letter-spacing:.12em;line-height:1.15;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 10px color-mix(in srgb,var(--accent) 12%,transparent),0 2px 8px rgba(0,0,0,.12)}
 @media(max-width:420px){.dashboard-date-time{gap:4px}.dashboard-clock{font-size:1rem;padding:4px 9px;min-width:72px}}
+
+/* 1.7.18.7 compact dashboard heading: keep date and clock alongside the title */
+.dashboard-title-row{
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.dashboard-title{flex:1 1 auto;min-width:0}
+.dashboard-title h2{white-space:nowrap}
+.dashboard-date-time{flex:0 0 auto;gap:2px}
+.dashboard-clock{padding:3px 8px;font-size:.96rem;min-width:70px;letter-spacing:.1em}
+@media(max-width:420px){
+  .dashboard-title-row{gap:6px}
+  .dashboard-title h2{font-size:1rem}
+  .dashboard-date{font-size:.72rem}
+  .dashboard-clock{font-size:.9rem;padding:3px 7px;min-width:66px}
+}

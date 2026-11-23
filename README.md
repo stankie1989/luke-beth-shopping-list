@@ -1,3 +1,6 @@
+Luke & Beth Shared Shopping List — Version 1.7.18.7
+Dashboard refinement: aligned the date and compact digital clock horizontally with the Household dashboard heading, reducing vertical space while retaining the date above the live 24-hour clock. Built on 1.7.18.6; no SQL changes required.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.6
 
 Dashboard update: kept the household dashboard date in its existing right-hand position and added a compact live 24-hour digital clock directly underneath. The clock refreshes every minute and follows the device's local time. No SQL changes required; built on 1.7.18.5.
