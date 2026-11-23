@@ -1,8 +1,7 @@
-# Luke & Beth's Shared Shopping List — v1.7.10.2
+# Luke & Beth's Shared Shopping List — v1.7.10.3
 
-Calendar copy refinement based on 1.7.10.1.
-- Both Copy a day and Copy meal use native date-picker controls.
-- Selecting a destination with existing meals offers a swap option.
-- Copying without swapping keeps existing destination meals and adds copies.
-- Swapping moves the source and destination meals/days into each other's dates.
-- No SQL migration required.
+Small UX refinement based on 1.7.10.2.
+- Replaces native browser confirmation prompts for meal/day swap decisions with a styled in-app dialog.
+- Clear actions: Swap, Copy alongside, or Cancel.
+- Applies to copying an individual meal and copying a whole day.
+- No SQL changes required.

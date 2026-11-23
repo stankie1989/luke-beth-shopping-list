@@ -441,3 +441,17 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 /* 1.7.10.2 native calendar date controls */
 .copy-day-form input[type="date"]{appearance:auto;color-scheme:dark;min-height:54px;cursor:pointer}
 .copy-day-form input[type="date"]::-webkit-calendar-picker-indicator{opacity:1;cursor:pointer;filter:invert(.85)}
+
+/* 1.7.10.3 styled swap decision */
+.swap-choice-dialog{width:min(92vw,460px)}
+.swap-choice-dialog .more-description{line-height:1.55;margin:14px 0 20px}
+.swap-choice-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.swap-choice-actions button{min-height:52px;white-space:normal}
+.swap-choice-cancel{display:block;width:100%;margin-top:12px;padding:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:650}
+
+/* 1.7.10.3 styled swap decision */
+.swap-choice-dialog{width:min(92vw,460px)}
+.swap-choice-dialog .more-description{line-height:1.55;margin:14px 0 20px}
+.swap-choice-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.swap-choice-actions button{min-height:52px;white-space:normal}
+.swap-choice-cancel{display:block;width:100%;margin-top:12px;padding:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:650}

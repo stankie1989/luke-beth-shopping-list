@@ -121,7 +121,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.10.2</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.10.3</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -224,6 +224,15 @@
   </dialog>
   
 
+<dialog id="swapChoiceDialog" class="app-dialog swap-choice-dialog">
+  <div class="dialog-heading"><div><span class="section-icon">🔄</span><h2 id="swapChoiceTitle">Meal already planned</h2></div><button type="button" class="dialog-close" id="closeSwapChoice">×</button></div>
+  <p id="swapChoiceMessage" class="more-description"></p>
+  <div class="swap-choice-actions">
+    <button type="button" class="secondary-button" id="copyAlongsideButton">Copy alongside</button>
+    <button type="button" class="primary-button" id="swapNowButton">Swap</button>
+  </div>
+  <button type="button" class="swap-choice-cancel" id="cancelSwapChoice">Cancel</button>
+</dialog>
 <dialog id="copyMealDialog" class="app-dialog copy-day-dialog">
   <div class="dialog-heading"><div><span class="section-icon">📋</span><h2>Copy meal</h2></div><button type="button" class="dialog-close" id="closeCopyMeal">×</button></div>
   <p id="copyMealDescription" class="more-description">Choose the date to copy this meal to.</p>
@@ -281,6 +290,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.10.2"></script>
+  <script src="./app.js?v=1.7.10.3"></script>
 </body>
 </html>
