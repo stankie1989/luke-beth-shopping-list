@@ -607,7 +607,23 @@ function showMealRecipe(recipe,source){
  const host=$('#mealRecipeContent');host.innerHTML='';const title=document.createElement('h3');title.textContent=recipe.name;host.append(title);
  if(recipe.image){const img=document.createElement('img');img.className='meal-recipe-image';img.src=recipe.image;img.alt=recipe.name;host.append(img);}
  const ingredients=document.createElement('h4');ingredients.textContent='Ingredients';host.append(ingredients);const ul=document.createElement('ul');(recipe.ingredients||[]).forEach(x=>{const li=document.createElement('li');li.textContent=[x.quantity,x.name].filter(Boolean).join(' ');ul.append(li);});host.append(ul);
- const instructions=document.createElement('h4');instructions.textContent='Method';host.append(instructions);const method=document.createElement('p');method.className='meal-recipe-method';method.textContent=recipe.instructions||'No cooking instructions were supplied for this recipe.';host.append(method);
+ const instructions=document.createElement('h4');instructions.textContent='Method';host.append(instructions);
+ const method=document.createElement('div');method.className='meal-recipe-method';
+ const rawMethod=String(recipe.instructions||'No cooking instructions were supplied for this recipe.').replace(/\r\n?/g,'\n').trim();
+ const stepMatches=[...rawMethod.matchAll(/(?:^|\s)(\d{1,2})[.)]\s+/g)];
+ if(stepMatches.length>=2){
+  const list=document.createElement('ol');list.className='meal-recipe-steps';
+  for(let i=0;i<stepMatches.length;i++){
+   const start=stepMatches[i].index+stepMatches[i][0].length;
+   const end=i+1<stepMatches.length?stepMatches[i+1].index:rawMethod.length;
+   const stepText=rawMethod.slice(start,end).trim();
+   if(stepText){const li=document.createElement('li');li.textContent=stepText;list.append(li);}
+  }
+  method.append(list);
+ }else{
+  rawMethod.split(/\n\s*\n/).filter(Boolean).forEach(part=>{const p=document.createElement('p');p.textContent=part.trim();method.append(p);});
+ }
+ host.append(method);
  const sourceLine=document.createElement('p');sourceLine.className='meal-recipe-source';sourceLine.textContent='Recipe source: '+source+' · Recipe data provided by TheMealDB';host.append(sourceLine);const credit=document.createElement('a');credit.href='https://www.themealdb.com/';credit.target='_blank';credit.rel='noopener';credit.textContent='TheMealDB';credit.className='meal-recipe-link';host.append(credit);
  if(recipe.url){const link=document.createElement('a');link.href=recipe.url;link.target='_blank';link.rel='noopener';link.textContent='Open original recipe';link.className='meal-recipe-link';host.append(link);}
  $('#mealRecipeDialog').showModal();
@@ -1069,7 +1085,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.14",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.15.4",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

@@ -1,3 +1,7 @@
+Luke & Beth Shared Shopping List — Version 1.7.15.4
+
+Update: online recipe methods are formatted as spaced numbered steps or separated paragraphs. Fixed displayed app version, stylesheet cache-busting URL and service-worker registration version. Built from the confirmed working 1.7.15.3 baseline; preserves its Menu banner/button fixes. No SQL required.
+
 Luke & Beth Shared Shopping List — Version 1.7.15.3
 
 Fix: Menu tab now persistently hides the list status banner, Share with Beth button, share hint and approval card, even when background list-status refreshes run. The What can I cook? button remains at the top of Menu. No SQL required.
