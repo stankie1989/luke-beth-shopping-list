@@ -199,19 +199,45 @@ function promptTargetDate(message){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(new Date(value+"T12:00:00").getTime())){toast("Please enter a valid date in YYYY-MM-DD format.");return null;}
  return value;
 }
-async function copySingleMeal(entry){
- const target=promptTargetDate(`Copy "${entry.name}" to which date?`);
- if(!target)return;
- const exists=state.menuEntries.some(x=>x.entry_date===target&&x.meal_type===entry.meal_type);
- if(exists&&!confirm("There is already a meal in that slot. Copy anyway?"))return;
+let pendingCopyMeal=null;
+function openCopyMealDialog(entry){
+ pendingCopyMeal=entry;
+ $("#copyMealDescription").textContent=`Choose where to copy "${entry.name}".`;
+ $("#copyMealTarget").value="";
+ $("#copyMealDialog").showModal();
+}
+async function copySingleMealSubmit(e){
+ e.preventDefault();if(!pendingCopyMeal)return;
+ const entry=pendingCopyMeal,target=$("#copyMealTarget").value;
+ if(!target)return toast("Choose a destination date.");
+ if(target===entry.entry_date)return toast("Choose a different date.");
+ const collision=state.menuEntries.find(x=>x.entry_date===target&&x.meal_type===entry.meal_type);
+ if(collision){
+  const swap=confirm(`There is already "${collision.name}" in that slot.\\n\\nPress OK to SWAP the two meals. Press Cancel to keep both meals on the destination day.`);
+  if(swap){
+   const {error}=await db.from("menu_entries").update({entry_date:entry.entry_date}).eq("id",collision.id);
+   if(error)return toast("Couldn't swap the existing meal: "+error.message);
+   const {data,error:moveError}=await db.from("menu_entries").update({entry_date:target}).eq("id",entry.id).select("*").single();
+   if(moveError)return toast("The existing meal moved, but the copied meal couldn't be moved. Please refresh.");
+   state.menuEntries=state.menuEntries.filter(x=>x.id!==collision.id&&x.id!==entry.id);
+   state.menuEntries.push({...collision,entry_date:entry.entry_date},data);
+   $("#copyMealDialog").close();pendingCopyMeal=null;
+   await refreshMenuAfterCopy(target);toast("Meals swapped.");
+   return;
+  }
+ }
  const payload={household_id:state.householdId,entry_date:target,meal_type:entry.meal_type,name:entry.name,image_key:entry.image_key,ingredients:entry.ingredients||[],created_by:state.user.id};
  const {data,error}=await db.from("menu_entries").insert(payload).select("*").single();
  if(error)return toast("Couldn't copy meal: "+error.message);
+ $("#copyMealDialog").close();pendingCopyMeal=null;state.menuEntries.push(data);
+ await refreshMenuAfterCopy(target);toast("Meal copied to "+dateLabel(target)+".");
+}
+async function refreshMenuAfterCopy(target){
  const start=new Date(`${state.menuStart}T12:00:00`),end=new Date(start);end.setDate(end.getDate()+13);
  if(target<localISO(start)||target>localISO(end)){state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();}
- else{state.menuEntries.push(data);renderMenu();}
- toast("Meal copied to "+dateLabel(target)+".");
+ else renderMenu();
 }
+
 function openCopyDayDialog(){
  const select=$("#copyDaySource");select.innerHTML="";
  const byDate={};
@@ -227,28 +253,29 @@ function openCopyDayDialog(){
  $("#copyDayTarget").value="";
  $("#copyDayDialog").showModal();
 }
-function parseDisplayDate(value){
- const match=String(value||"").trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
- if(!match)return null;
- const [,dd,mm,yyyy]=match;const date=new Date(`${yyyy}-${mm}-${dd}T12:00:00`);
- if(date.getFullYear()!==Number(yyyy)||date.getMonth()!==Number(mm)-1||date.getDate()!==Number(dd))return null;
- return `${yyyy}-${mm}-${dd}`;
-}
 async function copyWholeDay(e){
  e.preventDefault();
- const source=$("#copyDaySource").value;
- const target=parseDisplayDate($("#copyDayTarget").value);
- if(!target)return toast("Please enter a valid date in DD-MM-YYYY format.");
+ const source=$("#copyDaySource").value,target=$("#copyDayTarget").value;
+ if(!target)return toast("Choose a destination date.");
  if(source===target)return toast("Choose a different destination date.");
  const meals=state.menuEntries.filter(x=>x.entry_date===source);
  if(!meals.length)return toast("There are no meals on the selected day.");
- const targetSlots=state.menuEntries.filter(x=>x.entry_date===target);
- if(targetSlots.length&&!confirm("There are already meals planned on the destination day. Copy these meals as well?"))return;
+ const targetMeals=state.menuEntries.filter(x=>x.entry_date===target);
+ if(targetMeals.length){
+  const swap=confirm(`The destination already has ${targetMeals.length} planned meal(s).\\n\\nPress OK to SWAP the two days. Press Cancel to copy the meals alongside the existing ones.`);
+  if(swap){
+   const idsSource=meals.map(x=>x.id),idsTarget=targetMeals.map(x=>x.id);
+   const {error:moveTargetError}=await db.from("menu_entries").update({entry_date:source}).in("id",idsTarget);
+   if(moveTargetError)return toast("Couldn't move the destination day's meals: "+moveTargetError.message);
+   const {error:moveSourceError}=await db.from("menu_entries").update({entry_date:target}).in("id",idsSource);
+   if(moveSourceError)return toast("Destination meals moved, but source meals couldn't be swapped. Please refresh.");
+   $("#copyDayDialog").close();state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();toast("Days swapped.");return;
+  }
+ }
  const payload=meals.map(x=>({household_id:state.householdId,entry_date:target,meal_type:x.meal_type,name:x.name,image_key:x.image_key,ingredients:x.ingredients||[],created_by:state.user.id}));
  const {data,error}=await db.from("menu_entries").insert(payload).select("*");
  if(error)return toast("Couldn't copy day: "+error.message);
- $("#copyDayDialog").close();
- state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();toast(`${data.length} meals copied to ${dateLabel(target)}.`);
+ $("#copyDayDialog").close();state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();toast(`${data.length} meals copied to ${dateLabel(target)}.`);
 }
 
 function renderMenu(){
@@ -275,7 +302,7 @@ function renderMenu(){
      const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";setMealArt(thumb,slot.entry.image_key);thumb.title="Edit meal";thumb.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
      const info=document.createElement("button");info.type="button";info.className="meal-info";info.innerHTML=`<small>${slot.label}</small><strong></strong>`;info.querySelector("strong").textContent=slot.entry.name;info.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
      const add=document.createElement("button");add.type="button";add.className="meal-add-ingredients";add.textContent="＋ List";add.title="Add ingredients to shopping list";add.onclick=()=>addMealIngredients(slot.entry);
-     const copy=document.createElement("button");copy.type="button";copy.className="meal-copy-button";copy.textContent="Copy";copy.title="Copy this meal to another day";copy.onclick=()=>copySingleMeal(slot.entry);row.append(tick,thumb,info,add,copy);
+     const copy=document.createElement("button");copy.type="button";copy.className="meal-copy-button";copy.textContent="Copy";copy.title="Copy this meal to another day";copy.onclick=()=>openCopyMealDialog(slot.entry);row.append(tick,thumb,info,add,copy);
     }else{
      const add=document.createElement("button");add.type="button";add.className="menu-add-slot";add.textContent=`＋ Add ${slot.label.toLowerCase()}`;add.onclick=()=>openMealSourcePicker(iso,slot.type);row.append(add);
     }
@@ -716,7 +743,7 @@ function wire(){
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
- $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
+ $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#cancelCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#copyMealForm").onsubmit=copySingleMealSubmit;$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
  $("#menuFavourites").onclick=showFavourites;$("#openMealFinder").onclick=openMealFinder;$("#closeMealFinder").onclick=()=>$("#mealFinderDialog").close();$("#findMealsButton").onclick=findMealsFromIngredients;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
@@ -753,7 +780,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.10.1",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.10.2",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

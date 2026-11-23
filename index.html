@@ -121,7 +121,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.10.1</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.10.2</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -224,6 +224,16 @@
   </dialog>
   
 
+<dialog id="copyMealDialog" class="app-dialog copy-day-dialog">
+  <div class="dialog-heading"><div><span class="section-icon">📋</span><h2>Copy meal</h2></div><button type="button" class="dialog-close" id="closeCopyMeal">×</button></div>
+  <p id="copyMealDescription" class="more-description">Choose the date to copy this meal to.</p>
+  <form id="copyMealForm" class="copy-day-form">
+    <label for="copyMealTarget">Copy meal to</label>
+    <input id="copyMealTarget" type="date" required>
+    <small class="copy-day-hint">If that meal slot is already occupied, you can swap the meals.</small>
+    <div class="copy-day-actions"><button type="button" class="secondary-button" id="cancelCopyMeal">Cancel</button><button type="submit" class="primary-button">Continue</button></div>
+  </form>
+</dialog>
 <dialog id="copyDayDialog" class="app-dialog copy-day-dialog">
   <div class="dialog-heading"><div><span class="section-icon">📋</span><h2>Copy a day</h2></div><button type="button" class="dialog-close" id="closeCopyDay">×</button></div>
   <p class="more-description">Copy all planned meals from one day to another. Your original meals will stay where they are.</p>
@@ -231,8 +241,8 @@
     <label for="copyDaySource">Copy meals from</label>
     <select id="copyDaySource" required></select>
     <label for="copyDayTarget">Copy meals to</label>
-    <input id="copyDayTarget" type="text" inputmode="numeric" placeholder="DD-MM-YYYY" maxlength="10" required>
-    <small class="copy-day-hint">Enter the destination date as DD-MM-YYYY, for example 04-12-2026.</small>
+    <input id="copyDayTarget" type="date" required>
+    <small class="copy-day-hint">Choose a date from the calendar. Dates with existing meals will be handled before copying.</small>
     <div class="copy-day-actions"><button type="button" class="secondary-button" id="cancelCopyDay">Cancel</button><button type="submit" class="primary-button">Copy meals</button></div>
   </form>
 </dialog>
@@ -271,6 +281,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.10.1"></script>
+  <script src="./app.js?v=1.7.10.2"></script>
 </body>
 </html>
