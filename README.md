@@ -1,3 +1,7 @@
+Luke & Beth Shared Shopping List — Version 1.7.15.5
+
+Update: recipe method paragraphs and numbered steps now display as separate softly tinted outlined cards, alternating blue, teal and purple. Built from confirmed working 1.7.15.4. Preserves menu cleanup, meal finder and update checks. No SQL required.
+
 Luke & Beth Shared Shopping List — Version 1.7.15.4
 
 Update: online recipe methods are formatted as spaced numbered steps or separated paragraphs. Fixed displayed app version, stylesheet cache-busting URL and service-worker registration version. Built from the confirmed working 1.7.15.3 baseline; preserves its Menu banner/button fixes. No SQL required.

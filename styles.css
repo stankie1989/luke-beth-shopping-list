@@ -553,3 +553,31 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .meal-recipe-steps{margin:0;padding-left:27px;display:flex;flex-direction:column;gap:14px;line-height:1.65}
 .meal-recipe-steps li{padding-left:5px}
 .meal-recipe-steps li::marker{font-weight:750;color:var(--accent)}
+
+/* 1.7.15.5: outlined recipe paragraph and step cards (Option 1) */
+.meal-recipe-method p,
+.meal-recipe-steps li{
+  border:1px solid #438edb;
+  border-radius:13px;
+  padding:13px 15px;
+  margin:0;
+  background:rgba(67,142,219,.045);
+  line-height:1.65;
+}
+.meal-recipe-method p:nth-child(3n+2),
+.meal-recipe-steps li:nth-child(3n+2){
+  border-color:#32b99a;
+  background:rgba(50,185,154,.045);
+}
+.meal-recipe-method p:nth-child(3n),
+.meal-recipe-steps li:nth-child(3n){
+  border-color:#a17bea;
+  background:rgba(161,123,234,.05);
+}
+.meal-recipe-method{display:flex;flex-direction:column;gap:12px}
+.meal-recipe-method p{margin:0}
+.meal-recipe-steps{padding-left:0;list-style-position:inside;gap:12px}
+.meal-recipe-steps li{padding:13px 15px}
+.meal-recipe-steps li::marker{font-weight:800;color:#70b9ff}
+.meal-recipe-steps li:nth-child(3n+2)::marker{color:#55d4b2}
+.meal-recipe-steps li:nth-child(3n)::marker{color:#b69aff}
