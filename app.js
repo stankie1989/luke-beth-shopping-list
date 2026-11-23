@@ -955,10 +955,37 @@ function handleCalendarReturn(){
 function renderDashboard(){
  const today=new Date(),tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
  const todayISO=localISO(today),tomorrowISO=localISO(tomorrow);
- const total=state.items.length,bought=state.items.filter(x=>x.is_bought).length,remaining=total-bought;
+ const remaining=state.items.filter(x=>!x.is_bought).length;
  $("#dashboardDate").textContent=today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
- $("#dashTotal").textContent=String(total);$("#dashBought").textContent=`${bought} bought`;
  $("#dashRemaining").textContent=String(remaining);
+
+ // Count consecutive dinner entries from today, stopping at the first missing dinner.
+ // Menu data covers the currently loaded fortnight; never imply dates beyond that range are planned.
+ const plannedDinnerDates=new Set(state.menuEntries.filter(x=>x.meal_type==="dinner").map(x=>x.entry_date));
+ const menuStart=new Date(`${state.menuStart||localISO(mondayOf(today))}T12:00:00`);
+ const menuEnd=new Date(menuStart);menuEnd.setDate(menuEnd.getDate()+13);
+ const daysAvailable=Math.max(0,Math.floor((new Date(localISO(menuEnd)+"T12:00:00")-new Date(todayISO+"T12:00:00"))/86400000)+1);
+ let consecutive=0,firstMissing=null;
+ for(let offset=0;offset<daysAvailable;offset++){
+  const date=new Date(today);date.setDate(date.getDate()+offset);const key=localISO(date);
+  if(plannedDinnerDates.has(key))consecutive++;
+  else{firstMissing=date;break;}
+ }
+ const daysEl=$("#dashDinnerDays"),runsOutEl=$("#dashDinnerRunsOut");
+ if(daysEl&&runsOutEl){
+  if(firstMissing){
+   daysEl.textContent=`${consecutive} day${consecutive===1?"":"s"} left`;
+   const gap=new Date(firstMissing);const diff=Math.round((new Date(localISO(gap)+"T12:00:00")-new Date(todayISO+"T12:00:00"))/86400000);
+   const weekday=gap.toLocaleDateString("en-GB",{weekday:"long"});
+   const dayPhrase=diff>=7?`next ${weekday}`:weekday;
+   runsOutEl.textContent=diff===0?"Runs out today":`Runs out ${dayPhrase}`;
+  }else if(daysAvailable>0){
+   daysEl.textContent=`${consecutive} days planned`;
+   runsOutEl.textContent=`Planned through ${menuEnd.toLocaleDateString("en-GB",{weekday:"long"})}`;
+  }else{
+   daysEl.textContent="0 days left";runsOutEl.textContent="No dinner planned today";
+  }
+ }
  const host=$("#dashboardCategories");host.innerHTML="";
  const cats=new Map();
  state.items.filter(x=>!x.is_bought).forEach(item=>{const cat=item.category||guessShoppingCategory(item.name)||"Other";cats.set(cat,(cats.get(cat)||0)+1);});
@@ -1232,7 +1259,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.18.3",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.18.5",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

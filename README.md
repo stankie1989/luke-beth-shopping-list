@@ -1,3 +1,7 @@
+Luke & Beth Shared Shopping List — Version 1.7.18.5
+
+Dashboard update: replaced duplicated shopping totals with a compact Dinner plan tile beside Still to buy. The dinner tile counts consecutive planned dinners from today and names the first day without a planned dinner. Built on 1.7.18.4; no SQL changes required.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.4
 
 Update: colour-coded Beth’s shift finishing-time badges on the Dashboard. Green for finishes before 16:00, amber from 16:00 through 18:00, and red after 18:00. The full shift time remains visible beneath the highlighted finish time. No SQL or database changes required.

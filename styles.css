@@ -708,3 +708,11 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .pickup-colour-settings{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:10px 14px;margin:12px 0}
 .pickup-colour-settings label{font-weight:650}
 .pickup-colour-settings input{width:100%;min-width:0;box-sizing:border-box}
+
+/* 1.7.18.5 compact dashboard summary tiles */
+.dashboard-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dashboard-stat{padding:12px;gap:5px}
+.dashboard-stat>span{font-weight:700}
+.dashboard-stat strong{font-size:clamp(1.45rem,5.2vw,1.8rem);letter-spacing:-.035em}
+.dinner-plan-stat strong{font-size:clamp(1.25rem,4.6vw,1.65rem);white-space:nowrap}
+.dashboard-stat small{line-height:1.3}
