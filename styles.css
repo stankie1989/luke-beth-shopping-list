@@ -377,3 +377,15 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 @media(max-width:390px){.meal-icon-suggestion-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.meal-suggestion-choice{min-height:76px;}}
 
 .day-favourite-icon{height:38px;display:grid;place-items:center}.favourite-preview-heading>span{width:56px;height:56px;display:grid;place-items:center;flex:none}.favourite-preview-heading>span .meal-custom-art{width:56px;height:56px}.favourite-row>span:first-child{width:42px;height:42px;display:grid;place-items:center;flex:none}
+
+/* v1.7.7 – searchable, categorised favourite meals */
+.favourite-search-label{display:block;margin:12px 0 5px;font-size:12px;color:var(--muted)}
+.favourite-search{width:100%;margin-bottom:9px}
+.favourite-filter-row{display:flex;align-items:center;gap:10px;margin:0 0 13px}
+.favourite-filter-row label{font-size:12px;color:var(--muted);white-space:nowrap}
+.favourite-filter-row select{flex:1;min-width:0}
+.favourite-row-content{display:grid;gap:4px;flex:1;min-width:0}
+.favourite-row-content strong{overflow-wrap:anywhere}
+.favourite-row-content small{font-size:10px;color:var(--muted)}
+.favourite-category-select{max-width:112px;min-width:0;font-size:11px;padding:7px 5px}
+@media(max-width:430px){.favourite-row{flex-wrap:wrap}.favourite-row-content{min-width:calc(100% - 65px)}.favourite-category-select{margin-left:50px;flex:1;max-width:none}.favourite-actions{margin-left:auto}}

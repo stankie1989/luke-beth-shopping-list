@@ -85,6 +85,20 @@ function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStar
 function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 function dateLabel(s){return new Date(`${s}T12:00:00`).toLocaleDateString("en-GB",{day:"numeric",month:"short"});}
 function mealImage(key){return MEAL_IMAGES.find(x=>x[0]===key)||MEAL_IMAGES[0];}
+const FAVOURITE_CATEGORIES=["Breakfast","Chicken","Meat","Fish","Pasta & rice","Vegetarian","Quick meals","Desserts","Other"];
+function autoFavouriteCategory(f){const text=normaliseMealText([f.name,...(f.ingredients||[]).map(x=>x.name)].join(" "));
+ if(/cake|pudding|dessert|ice cream|brownie|cookie|pancake|waffle|sweet|trifle/.test(text))return "Desserts";
+ if(/breakfast|bacon|egg|porridge|cereal|toast|sausage bap/.test(text))return "Breakfast";
+ if(/fish|salmon|tuna|cod|prawn|shrimp|seafood|fish finger/.test(text))return "Fish";
+ if(/chicken|nugget|fajita|kiev|drumstick/.test(text))return "Chicken";
+ if(/pasta|spaghetti|lasagne|macaroni|noodle|rice|risotto|carbonara|bolognese/.test(text))return "Pasta & rice";
+ if(/sausage|beef|pork|lamb|steak|mince|ham|bacon|meat|burger|meatball|gammon/.test(text))return "Meat";
+ if(/vegetarian|veggie|bean|lentil|tofu|salad|vegetable|cheese|mushroom|potato|tomato soup/.test(text))return "Vegetarian";
+ if(/quick|toastie|sandwich|wrap|omelette|jacket potato/.test(text))return "Quick meals";
+ return "Other";
+}
+function favouriteCategory(f){const overrides=JSON.parse(localStorage.getItem("lb-favourite-categories")||"{}");return overrides[f.id]||autoFavouriteCategory(f);}
+function setFavouriteCategory(f,category){const overrides=JSON.parse(localStorage.getItem("lb-favourite-categories")||"{}");if(category===autoFavouriteCategory(f))delete overrides[f.id];else overrides[f.id]=category;localStorage.setItem("lb-favourite-categories",JSON.stringify(overrides));}
 const CUSTOM_MEAL_ART={
  sausages:{file:"sausages.png",aliases:["sausage","sausages","banger","bangers","pork sausage","grilled sausage"]},
  bangers_mash:{file:"bangers-mash.png",aliases:["sausage and mash","sausages and mash","bangers and mash","sausage mash","bangers mash"]},
@@ -337,12 +351,18 @@ async function loadMenuFavourites(){
  const {data,error}=await db.from("menu_favourites").select("*").eq("household_id",state.householdId).order("name");
  if(error){console.warn(error);return;}state.menuFavourites=data||[];
 }
-async function showFavourites(){
- await loadMenuFavourites();const host=$("#favouritesList");host.innerHTML="";
- if(!state.menuFavourites.length){host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it."; }
- state.menuFavourites.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");setMealArt(icon,f.image_key);const name=document.createElement("strong");name.textContent=f.name;const actions=document.createElement("div");actions.className="favourite-actions";const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{state.pendingFavourite=f;$("#favouritesDialog").close();openDatePicker(localISO(new Date()),"dinner","favourite");};const remove=document.createElement("button");remove.type="button";remove.className="favourite-remove";remove.textContent="×";remove.title="Remove favourite";remove.setAttribute("aria-label",`Remove ${f.name} from favourites`);remove.onclick=async()=>{if(!confirm(`Remove “${f.name}” from favourite meals? This won't delete meals already planned.`))return;const {error}=await db.from("menu_favourites").delete().eq("id",f.id);if(error)return toast("Couldn't remove favourite: "+error.message);state.menuFavourites=state.menuFavourites.filter(x=>x.id!==f.id);row.remove();if(!state.menuFavourites.length)host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it.";toast("Favourite removed.");};actions.append(use,remove);row.append(icon,name,actions);host.append(row);});
- $("#favouritesDialog").showModal();
+function renderFavouritesList(){
+ const host=$("#favouritesList");if(!host)return;host.innerHTML="";
+ const q=normaliseMealText($("#favouriteSearch")?.value||"");const category=$("#favouriteCategoryFilter")?.value||"all";
+ const filtered=state.menuFavourites.filter(f=>{const cat=favouriteCategory(f);const text=normaliseMealText([f.name,...(f.ingredients||[]).map(x=>x.name)].join(" "));return (!q||text.includes(q))&&(category==="all"||cat===category);});
+ if(!state.menuFavourites.length){host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding a meal.";return;}
+ if(!filtered.length){host.textContent="No favourites match that search. Try another meal name, ingredient or category.";return;}
+ filtered.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");setMealArt(icon,f.image_key);const content=document.createElement("div");content.className="favourite-row-content";const name=document.createElement("strong");name.textContent=f.name;const detail=document.createElement("small");detail.textContent=`${(f.ingredients||[]).length} ingredients`;content.append(name,detail);
+ const categorySelect=document.createElement("select");categorySelect.className="favourite-category-select";categorySelect.setAttribute("aria-label",`Category for ${f.name}`);FAVOURITE_CATEGORIES.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;o.selected=c===favouriteCategory(f);categorySelect.append(o);});categorySelect.onchange=()=>{setFavouriteCategory(f,categorySelect.value);toast(`${f.name} categorised as ${categorySelect.value}.`);};
+ const actions=document.createElement("div");actions.className="favourite-actions";const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{state.pendingFavourite=f;$("#favouritesDialog").close();openDatePicker(localISO(new Date()),"dinner","favourite");};const remove=document.createElement("button");remove.type="button";remove.className="favourite-remove";remove.textContent="×";remove.title="Remove favourite";remove.setAttribute("aria-label",`Remove ${f.name} from favourites`);remove.onclick=async()=>{if(!confirm(`Remove “${f.name}” from favourite meals? This won't delete meals already planned.`))return;const {error}=await db.from("menu_favourites").delete().eq("id",f.id);if(error)return toast("Couldn't remove favourite: "+error.message);state.menuFavourites=state.menuFavourites.filter(x=>x.id!==f.id);renderFavouritesList();toast("Favourite removed.");};actions.append(use,remove);row.append(icon,content,categorySelect,actions);host.append(row);});
 }
+async function showFavourites(){await loadMenuFavourites();$("#favouriteSearch").value="";$("#favouriteCategoryFilter").value="all";renderFavouritesList();$("#favouritesDialog").showModal();}
+
 async function addMealIngredients(entry){
  const ingredients=entry.ingredients||[];if(!ingredients.length)return toast("No ingredients saved for this meal yet.");
  const {data:lists,error}=await db.from("shopping_lists").select("*").eq("household_id",state.householdId).order("created_at");
@@ -541,7 +561,7 @@ function wire(){
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
- $("#menuFavourites").onclick=showFavourites;$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
+ $("#menuFavourites").onclick=showFavourites;$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
  $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
