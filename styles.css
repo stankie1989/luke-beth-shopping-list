@@ -646,3 +646,10 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
  .dashboard-title-row{gap:4px}
  .dashboard-date{font-size:.75rem}
 }
+
+
+/* 1.7.16.3 dashboard spacing and inset heading */
+.app-shell.dashboard-tab-active main > .people-strip{margin-top:18px}
+.dashboard-title-row{padding-inline:14px;width:100%;box-sizing:border-box}
+.dashboard-title{padding-inline:0}
+.dashboard-date{padding-inline:0}

@@ -43,8 +43,14 @@ Automatic smart category inference, built from confirmed 1.7.13.3.
 - No database migration or SQL required.
 
 
-## Version 1.7.16.2
+## Version 1.7.16.3
 - Refined household dashboard heading and date layout for narrow mobile screens.
 - Dashboard dinner cards now use the same meal artwork as the Menu Planner.
 - Corrected bottom navigation to use four equal-width columns.
 - No database or SQL changes.
+
+
+## Version 1.7.16.3
+- Added spacing above the household member strip when Dashboard is selected.
+- Inset the dashboard title icon and date from the card edges for improved mobile alignment.
+- No SQL changes.
