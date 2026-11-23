@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=1.7.16.3">
+  <link rel="stylesheet" href="./styles.css?v=1.7.17">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -104,6 +104,13 @@
           <section class="dashboard-card"><div class="dashboard-card-heading"><h3>Today</h3><span class="dashboard-meal-art" id="dashboardTodayArt" aria-hidden="true"></span></div><p class="dashboard-meal-label">Dinner</p><div id="dashboardTodayMeal" class="dashboard-meal-content">No dinner planned yet</div></section>
           <section class="dashboard-card"><div class="dashboard-card-heading"><h3>Tomorrow</h3><span class="dashboard-meal-art" id="dashboardTomorrowArt" aria-hidden="true"></span></div><p class="dashboard-meal-label">Dinner</p><div id="dashboardTomorrowMeal" class="dashboard-meal-content">No dinner planned yet</div></section>
         </div>
+        <section class="dashboard-card calendar-dashboard-card">
+          <div class="dashboard-card-heading"><h3>🚗 Beth's work shifts</h3><button id="refreshCalendarButton" class="text-button hidden" type="button">Refresh</button></div>
+          <p id="calendarStatus" class="dashboard-muted">Connect your Google Calendar to show Beth's upcoming shifts here.</p>
+          <div id="calendarShifts" class="calendar-shifts"></div>
+          <button id="connectCalendarButton" class="primary-button calendar-connect-button" type="button">Connect Google Calendar</button>
+          <small class="calendar-privacy-note">Read-only access. The app cannot change your calendar.</small>
+        </section>
       </section>
       <section id="historyPanel" class="tab-panel hidden">
         <section class="activity-panel panel">
@@ -134,7 +141,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Categories</h3><p class="more-description">Create and manage categories shared with your household.</p><button type="button" class="secondary-button" id="openManageCategories">Manage categories</button></section><section class="more-section"><h3>Shopping list</h3><p class="more-description">Choose how your shopping items are displayed.</p><label class="category-toggle-row" for="showShoppingCategories"><span><strong>Show categories</strong><small>Group items into supermarket sections</small></span><input id="showShoppingCategories" type="checkbox"></label></section><section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.16.3</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.17</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -336,6 +343,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.16.3"></script>
+  <script src="./app.js?v=1.7.17"></script>
 </body>
 </html>

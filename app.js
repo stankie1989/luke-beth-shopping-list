@@ -3,7 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
-const state={recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -833,6 +833,62 @@ async function deleteCategory(name){
 }
 const CATEGORY_ACCENT_COLORS=["#55b6e8","#e58b55","#69b987","#bd91ed","#e17b9b","#c5a65b","#4ebbb2","#df9c55","#8c9ee8","#98a2b3"];
 function categoryAccentColor(category){const i=Math.max(0,SHOP_CATEGORIES.indexOf(category));return CATEGORY_ACCENT_COLORS[i%CATEGORY_ACCENT_COLORS.length];}
+const CALENDAR_FUNCTION_URL=`${SUPABASE_URL}/functions/v1/google-calendar-oauth`;
+function renderCalendarShifts(){
+ const status=$("#calendarStatus"),host=$("#calendarShifts"),button=$("#connectCalendarButton"),refresh=$("#refreshCalendarButton");
+ if(!status||!host||!button||!refresh)return;
+ host.innerHTML="";
+ if(state.calendar.loading){status.textContent="Checking Beth's calendar…";button.classList.add("hidden");refresh.classList.add("hidden");return;}
+ if(!state.calendar.connected){status.textContent=state.calendar.error||"Connect your Google Calendar to show Beth's upcoming shifts here.";button.classList.remove("hidden");refresh.classList.add("hidden");button.textContent="Connect Google Calendar";return;}
+ status.textContent=state.calendar.email?`Connected · ${state.calendar.email}`:"Google Calendar connected";
+ button.classList.add("hidden");refresh.classList.remove("hidden");
+ if(!state.calendar.shifts.length){const empty=document.createElement("p");empty.className="dashboard-muted";empty.textContent="No matching shifts found in the next 30 days.";host.append(empty);return;}
+ state.calendar.shifts.slice(0,5).forEach(shift=>{
+  const row=document.createElement("div");row.className="calendar-shift-row";
+  const date=document.createElement("strong");
+  const start=new Date(shift.start),end=new Date(shift.end);
+  date.textContent=shift.start?.includes("T")?start.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):start.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+  const times=document.createElement("span");
+  if(shift.start?.includes("T")&&shift.end?.includes("T"))times.textContent=`${start.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})} – ${end.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`;
+  else times.textContent="All day";
+  const finish=document.createElement("small");finish.textContent=shift.end?.includes("T")?`Finishes ${end.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`:"All-day shift";
+  row.append(date,times,finish);host.append(row);
+ });
+}
+async function requestCalendar(action){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session?.access_token)throw new Error("Please sign in again to connect your calendar.");
+ const response=await fetch(`${CALENDAR_FUNCTION_URL}?action=${encodeURIComponent(action)}`,{method:"GET",headers:{"Authorization":`Bearer ${session.access_token}`,"apikey":SUPABASE_PUBLISHABLE_KEY}});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(result.error||result.message||`Calendar request failed (${response.status}).`);
+ return result;
+}
+async function connectGoogleCalendar(){
+ const button=$("#connectCalendarButton");busy(button,true,"Opening Google…");
+ try{const result=await requestCalendar("connect");if(!result.authorizationUrl)throw new Error("Google authorisation link wasn't returned.");window.location.href=result.authorizationUrl;}
+ catch(error){busy(button,false);toast(error.message||"Couldn't start Google Calendar connection.");}
+}
+async function loadCalendarShifts(force=false){
+ if(state.calendar.loading||(!force&&state.calendar.loaded))return;
+ state.calendar.loading=true;state.calendar.error=null;renderCalendarShifts();
+ try{
+  const result=await requestCalendar("events");
+  state.calendar.connected=!!result.connected;state.calendar.shifts=result.shifts||[];state.calendar.email=result.calendarEmail||null;state.calendar.loaded=true;
+ }catch(error){
+  state.calendar.connected=false;state.calendar.shifts=[];state.calendar.loaded=true;
+  if(String(error.message).includes("404"))state.calendar.error="Google Calendar hasn't been connected yet.";
+  else state.calendar.error=error.message;
+ }
+ finally{state.calendar.loading=false;renderCalendarShifts();}
+}
+function handleCalendarReturn(){
+ const params=new URLSearchParams(location.search),result=params.get("calendar");
+ if(!result)return;
+ if(result==="connected"){toast("Google Calendar connected successfully.");state.calendar.loaded=false;}
+ else toast(`Google Calendar connection failed${params.get("reason")?`: ${params.get("reason")}`:"."}`);
+ params.delete("calendar");params.delete("reason");const query=params.toString();history.replaceState({},"",location.pathname+(query?`?${query}`:"")+location.hash);
+}
+
 function renderDashboard(){
  const today=new Date(),tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
  const todayISO=localISO(today),tomorrowISO=localISO(tomorrow);
@@ -1042,6 +1098,7 @@ function updateAuthMode(){
  $("#authPassword").autocomplete=signingUp?"new-password":"current-password";
 }
 function wire(){
+ $("#connectCalendarButton").onclick=connectGoogleCalendar;$("#refreshCalendarButton").onclick=()=>loadCalendarShifts(true);
  $("#applyUpdate").onclick=()=>{if(waitingWorker){waitingWorker.postMessage({type:"SKIP_WAITING"});$("#applyUpdate").disabled=true;$("#applyUpdate").textContent="Updating…";}};
  $("#dismissUpdate").onclick=()=>$("#updateBanner").hidden=true;
  $("#authForm").onsubmit=auth;updateAuthMode();
@@ -1103,14 +1160,14 @@ function wire(){
   $(".list-panel").classList.toggle("hidden",tab!=="list");
   $(".people-strip").classList.toggle("hidden",tab==="more");
   if(tab==="history")refreshActivity();
-  if(tab==="dashboard"){renderDashboard();if(state.menuEntries.length===0)loadMenu();}
+  if(tab==="dashboard"){renderDashboard();if(state.menuEntries.length===0)loadMenu();loadCalendarShifts();}
   if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
  });
 }
-async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
+async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.16.3",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.17",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

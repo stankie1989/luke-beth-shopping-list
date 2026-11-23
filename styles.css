@@ -653,3 +653,16 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .dashboard-title-row{padding-inline:14px;width:100%;box-sizing:border-box}
 .dashboard-title{padding-inline:0}
 .dashboard-date{padding-inline:0}
+
+
+/* 1.7.17 Google Calendar dashboard card */
+.calendar-dashboard-card{display:flex;flex-direction:column;gap:9px}
+.calendar-dashboard-card .dashboard-card-heading{margin-bottom:0}
+.calendar-dashboard-card .dashboard-muted{margin:0;line-height:1.45}
+.calendar-connect-button{width:100%;margin-top:3px}
+.calendar-privacy-note{display:block;color:var(--muted);font-size:.72rem;line-height:1.4}
+.calendar-shifts{display:flex;flex-direction:column;gap:8px}
+.calendar-shift-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2,var(--panel))}
+.calendar-shift-row strong{overflow-wrap:anywhere}
+.calendar-shift-row span{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.calendar-shift-row small{grid-column:1/-1;color:var(--muted)}

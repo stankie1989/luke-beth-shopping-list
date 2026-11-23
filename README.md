@@ -54,3 +54,11 @@ Automatic smart category inference, built from confirmed 1.7.13.3.
 - Added spacing above the household member strip when Dashboard is selected.
 - Inset the dashboard title icon and date from the card edges for improved mobile alignment.
 - No SQL changes.
+
+
+## Version 1.7.17 – Google Calendar dashboard connection
+- Added a read-only Google Calendar connection card to the Household Dashboard.
+- Uses the deployed Supabase `google-calendar-oauth` Edge Function and the existing private token table.
+- Displays matching Beth shift events for the next 30 days and their start/finish times.
+- Calendar access is optional; shopping list and menu features remain unchanged.
+- Requires Google OAuth and Supabase Edge Function setup; no additional SQL is required beyond the private token table already created.
