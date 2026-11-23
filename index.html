@@ -121,7 +121,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.5</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.6</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -203,6 +203,7 @@
     <div class="dialog-heading"><div><span class="section-icon">🎨</span><h2>Choose an illustration</h2></div><button type="button" class="dialog-close" id="closeMealIconPicker">×</button></div>
     <p class="list-picker-intro">Search or browse the food illustrations. Your selected icon is highlighted.</p>
     <input type="search" id="mealIconSearch" class="meal-icon-search" placeholder="Search food, e.g. chicken…" aria-label="Search food illustrations">
+    <div id="mealIconSuggestions" class="meal-icon-suggestions"></div>
     <div id="mealIconGrid" class="meal-icon-grid"></div>
     <button type="button" id="mealIconMore" class="secondary-button meal-icon-more">Show all illustrations</button>
     <div class="dialog-actions"><button type="button" id="cancelMealIconPicker" class="secondary-button">Cancel</button><button type="button" id="useMealIcon" class="primary-button">Use selected illustration</button></div>

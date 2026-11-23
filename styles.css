@@ -361,3 +361,19 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .favourite-preview-ingredients{display:grid;gap:7px;max-height:min(42dvh,340px);overflow-y:auto}
 .favourite-ingredient-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:13px}
 .favourite-ingredient-row strong{color:var(--muted);font-size:12px;white-space:nowrap}
+
+
+/* v1.7.6 – custom cartoon food art and meal-aware suggestions */
+.meal-custom-art{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;}
+.meal-thumb .meal-custom-art,.missed-meal-icon .meal-custom-art,.day-favourite-icon .meal-custom-art,.favourite-preview-heading .meal-custom-art,.favourite-row>span:first-child .meal-custom-art{width:100%;height:100%;object-fit:contain;}
+.meal-icon-suggestions{margin:10px 0 12px;}
+.meal-icon-suggestion-heading{font-size:12px;font-weight:800;color:var(--text);margin:10px 2px 7px;}
+.meal-icon-suggestion-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.meal-image-choice img{width:76%;height:76%;object-fit:contain;}
+.meal-suggestion-choice{min-height:84px;aspect-ratio:auto;gap:3px;padding:6px;}
+.meal-suggestion-choice img{width:54px;height:50px;}
+.meal-suggestion-choice span{font-size:10px;line-height:1.2;color:var(--muted);text-align:center;}
+.meal-suggestion-choice.selected span{color:var(--text);}
+@media(max-width:390px){.meal-icon-suggestion-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.meal-suggestion-choice{min-height:76px;}}
+
+.day-favourite-icon{height:38px;display:grid;place-items:center}.favourite-preview-heading>span{width:56px;height:56px;display:grid;place-items:center;flex:none}.favourite-preview-heading>span .meal-custom-art{width:56px;height:56px}.favourite-row>span:first-child{width:42px;height:42px;display:grid;place-items:center;flex:none}

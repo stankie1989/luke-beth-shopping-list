@@ -3,7 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
-const state={menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -85,6 +85,40 @@ function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStar
 function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 function dateLabel(s){return new Date(`${s}T12:00:00`).toLocaleDateString("en-GB",{day:"numeric",month:"short"});}
 function mealImage(key){return MEAL_IMAGES.find(x=>x[0]===key)||MEAL_IMAGES[0];}
+const CUSTOM_MEAL_ART={
+ sausages:{file:"sausages.png",aliases:["sausage","sausages","banger","bangers","pork sausage","grilled sausage"]},
+ bangers_mash:{file:"bangers-mash.png",aliases:["sausage and mash","sausages and mash","bangers and mash","sausage mash","bangers mash"]},
+ nuggets:{file:"chicken-nuggets.png",aliases:["chicken nuggets","nuggets","nugget","breaded chicken bites"]},
+ fishfingers:{file:"fish-fingers.png",aliases:["fish fingers","fish finger","fish sticks"]},
+ shepherdspie:{file:"shepherds-pie.png",aliases:["shepherds pie","shepherd's pie","shepherd pie"]},
+ spaghetti:{file:"spaghetti-bolognese.png",aliases:["spaghetti bolognese","spag bol","spaghetti meat sauce"]},
+ wrapchicken:{file:"chicken-fajitas.png",aliases:["chicken fajitas","fajitas","chicken wrap"]},
+ roast_dinner:{file:"roast-dinner.png",aliases:["roast dinner","sunday roast","roast chicken dinner"]},
+ maccheese:{file:"macaroni-cheese.png",aliases:["macaroni cheese","mac and cheese","mac n cheese"]},
+ curry:{file:"chicken-curry.png",aliases:["chicken curry","curry and rice","chicken tikka masala"]},
+ bakedbeans:{file:"beans-toast.png",aliases:["beans on toast","beans toast"]},
+ chips:{file:"chips.png",aliases:["chips","fries","chunky chips"]},
+ pancakes:{file:"pancakes.png",aliases:["pancakes","pancake stack"]},
+ pizza:{file:"pizza.png",aliases:["pizza","pepperoni pizza"]},
+ tomatosoup:{file:"tomato-soup.png",aliases:["tomato soup","tomato soup bowl"]},
+ fishchips:{file:"fish-chips.png",aliases:["fish and chips","fish n chips","fish chips"]}
+};
+function setMealArt(node,key){
+ if(!node)return;const item=mealImage(key),art=CUSTOM_MEAL_ART[key];node.replaceChildren();
+ if(art){const img=document.createElement("img");img.src=`./images/${art.file}`;img.alt=item[2];img.className="meal-custom-art";img.loading="lazy";node.append(img);}
+ else node.textContent=item[1];
+}
+function normaliseMealText(value){return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();}
+function suggestedMealKeys(value){
+ const q=normaliseMealText(value);if(!q)return [];
+ const ranked=[];
+ Object.entries(CUSTOM_MEAL_ART).forEach(([key,art])=>{let score=0;for(const alias of art.aliases){const a=normaliseMealText(alias);if(q===a)score=Math.max(score,120);else if(q.includes(a))score=Math.max(score,95+a.length/10);else if(a.includes(q)&&q.length>3)score=Math.max(score,55+a.length/20);}
+  const tokens=q.split(" ").filter(Boolean);const label=normaliseMealText(mealImage(key)[2]);const overlap=tokens.filter(t=>label.includes(t)).length;if(overlap)score=Math.max(score,overlap*12);
+  if(score)ranked.push({key,score});});
+ return ranked.sort((a,b)=>b.score-a.score).map(x=>x.key).filter((k,i,a)=>a.indexOf(k)===i).slice(0,6);
+}
+function rememberMealIcon(key){state.recentMealIcons=[key,...state.recentMealIcons.filter(x=>x!==key)].slice(0,8);localStorage.setItem("lb-recent-meal-icons",JSON.stringify(state.recentMealIcons));}
+
 function renderMenu(){
  const host=$("#menuWeeks");if(!host)return;host.innerHTML="";
  if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));
@@ -106,7 +140,7 @@ function renderMenu(){
     if(slot.entry){
      const completed=!!slot.entry.is_completed;row.classList.toggle("meal-completed",completed);
      const tick=document.createElement("button");tick.type="button";tick.className="meal-complete-toggle"+(completed?" checked":"");tick.textContent=completed?"✓":"";tick.setAttribute("role","checkbox");tick.setAttribute("aria-checked",String(completed));tick.setAttribute("aria-label",completed?"Mark meal as not eaten":"Mark meal as eaten");tick.onclick=()=>setMealCompleted(slot.entry,!completed);
-     const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";thumb.textContent=im[1];thumb.title="Edit meal";thumb.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
+     const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";setMealArt(thumb,slot.entry.image_key);thumb.title="Edit meal";thumb.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
      const info=document.createElement("button");info.type="button";info.className="meal-info";info.innerHTML=`<small>${slot.label}</small><strong></strong>`;info.querySelector("strong").textContent=slot.entry.name;info.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
      const add=document.createElement("button");add.type="button";add.className="meal-add-ingredients";add.textContent="＋ List";add.title="Add ingredients to shopping list";add.onclick=()=>addMealIngredients(slot.entry);
      row.append(tick,thumb,info,add);
@@ -132,7 +166,7 @@ function renderMissedMeals(){
  if(!state.missedMeals.length){const empty=document.createElement("div");empty.className="missed-meals-empty";empty.textContent="You're all caught up — no missed meals.";host.append(empty);return;}
  state.missedMeals.forEach(entry=>{
   const row=document.createElement("div");row.className="missed-meal-row";
-  const icon=document.createElement("span");icon.className="missed-meal-icon";icon.textContent=mealImage(entry.image_key)[1];
+  const icon=document.createElement("span");icon.className="missed-meal-icon";setMealArt(icon,entry.image_key);
   const info=document.createElement("div");info.className="missed-meal-info";
   const name=document.createElement("strong");name.textContent=entry.name;
   const meta=document.createElement("small");meta.textContent=`${entry.meal_type[0].toUpperCase()+entry.meal_type.slice(1)} · ${dateLabel(entry.entry_date)}`;
@@ -197,26 +231,26 @@ async function confirmDatePicker(){
 
 function updateSelectedMealArt(){
  const selected=mealImage(state.selectedMealImage);
- $("#selectedMealEmoji").textContent=selected[1];
+ setMealArt($("#selectedMealEmoji"),state.selectedMealImage);
  $("#selectedMealLabel").textContent=selected[2];
 }
 function renderMealIconPicker(){
- const host=$("#mealIconGrid"),search=$("#mealIconSearch"),more=$("#mealIconMore");
- const q=search.value.trim().toLowerCase();
- const matches=MEAL_IMAGES.filter(x=>x[2].toLowerCase().includes(q)||x[0].toLowerCase().includes(q));
- const shown=(state.mealIconsExpanded||q)?matches:matches.slice(0,18);
- host.innerHTML="";
- if(!matches.length){const empty=document.createElement("p");empty.className="meal-icon-empty";empty.textContent="No matching illustrations. Try another search.";host.append(empty);}
- shown.forEach(([key,emoji,label])=>{
-  const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");
-  b.textContent=emoji;b.title=label;b.setAttribute("aria-label",label);b.setAttribute("aria-pressed",String(key===state.selectedMealImage));
-  b.onclick=()=>{state.selectedMealImage=key;renderMealIconPicker();};host.append(b);
- });
- more.hidden=!!q||matches.length<=18;
- more.textContent=state.mealIconsExpanded?"Show fewer illustrations":`Show all ${matches.length} illustrations`;
+ const host=$("#mealIconGrid"),search=$("#mealIconSearch"),more=$("#mealIconMore"),suggestionHost=$("#mealIconSuggestions");
+ const q=search.value.trim().toLowerCase(),mealName=$("#mealName").value.trim();
+ const matches=MEAL_IMAGES.filter(x=>{const art=CUSTOM_MEAL_ART[x[0]];const terms=[x[2],x[0],...(art?.aliases||[])].join(" ").toLowerCase();return terms.includes(q)||!q;});
+ const suggestions=suggestedMealKeys(q||mealName);
+ suggestionHost.innerHTML="";
+ if(suggestions.length){const heading=document.createElement("div");heading.className="meal-icon-suggestion-heading";heading.textContent="Best matches for this meal";suggestionHost.append(heading);const grid=document.createElement("div");grid.className="meal-icon-suggestion-grid";suggestions.forEach(key=>{const item=mealImage(key),b=document.createElement("button");b.type="button";b.className="meal-image-choice meal-suggestion-choice"+(key===state.selectedMealImage?" selected":"");setMealArt(b,key);const label=document.createElement("span");label.textContent=item[2];b.append(label);b.title=item[2];b.onclick=()=>{state.selectedMealImage=key;rememberMealIcon(key);renderMealIconPicker();};grid.append(b);});suggestionHost.append(grid);}
+ const recent=(!q&&!suggestions.length)?state.recentMealIcons:[];
+ const recentKeys=recent.filter(key=>MEAL_IMAGES.some(x=>x[0]===key));
+ if(recentKeys.length){const heading=document.createElement("div");heading.className="meal-icon-suggestion-heading";heading.textContent="Recently used";suggestionHost.append(heading);const grid=document.createElement("div");grid.className="meal-icon-suggestion-grid";recentKeys.forEach(key=>{const item=mealImage(key),b=document.createElement("button");b.type="button";b.className="meal-image-choice meal-suggestion-choice"+(key===state.selectedMealImage?" selected":"");setMealArt(b,key);const label=document.createElement("span");label.textContent=item[2];b.append(label);b.onclick=()=>{state.selectedMealImage=key;rememberMealIcon(key);renderMealIconPicker();};grid.append(b);});suggestionHost.append(grid);}
+ const shown=(state.mealIconsExpanded||q)?matches:matches.slice(0,18);host.innerHTML="";
+ if(!matches.length){const empty=document.createElement("p");empty.className="meal-icon-empty";empty.textContent=suggestions.length?"No other matches in the full icon collection. Choose one of the suggested illustrations above.":"No matching illustrations. Try a different food name or browse the full collection.";host.append(empty);}
+ shown.forEach(([key,emoji,label])=>{const b=document.createElement("button");b.type="button";b.className="meal-image-choice"+(key===state.selectedMealImage?" selected":"");setMealArt(b,key);b.title=label;b.setAttribute("aria-label",label);b.setAttribute("aria-pressed",String(key===state.selectedMealImage));b.onclick=()=>{state.selectedMealImage=key;rememberMealIcon(key);renderMealIconPicker();};host.append(b);});
+ more.hidden=!!q||matches.length<=18;more.textContent=state.mealIconsExpanded?"Show fewer illustrations":`Show all ${matches.length} illustrations`;
 }
 function openMealIconPicker(){
- state.mealIconsExpanded=false;$("#mealIconSearch").value="";renderMealIconPicker();$("#mealIconPickerDialog").showModal();
+ state.mealIconsExpanded=false;const mealName=$("#mealName").value.trim();const suggestions=suggestedMealKeys(mealName);if(suggestions.length&&["dinner","breakfast"].includes(state.selectedMealImage))state.selectedMealImage=suggestions[0];$("#mealIconSearch").value=mealName;renderMealIconPicker();$("#mealIconPickerDialog").showModal();
 }
 function openMealSourcePicker(date,type){
  state.pendingMealDate=date;state.pendingMealType=type;
@@ -232,7 +266,7 @@ async function showFavouritePicker(date,type){
  if(!state.menuFavourites.length){const empty=document.createElement("p");empty.className="list-picker-intro";empty.textContent="No favourite meals saved yet. Save a meal as a favourite when adding a meal.";host.append(empty);}
  state.menuFavourites.forEach(f=>{
   const row=document.createElement("button");row.type="button";row.className="day-favourite-row";
-  const icon=document.createElement("span");icon.className="day-favourite-icon";icon.textContent=mealImage(f.image_key)[1];
+  const icon=document.createElement("span");icon.className="day-favourite-icon";setMealArt(icon,f.image_key);
   const info=document.createElement("span");info.className="day-favourite-info";
   const name=document.createElement("strong");name.textContent=f.name;
   const detail=document.createElement("small");detail.textContent=`${(f.ingredients||[]).length} ingredient${(f.ingredients||[]).length===1?"":"s"} · Tap to preview`;
@@ -243,7 +277,7 @@ async function showFavouritePicker(date,type){
 }
 function showFavouritePreview(f){
  state.previewingFavourite=f;
- const icon=$("#favouritePreviewIcon");icon.textContent=mealImage(f.image_key)[1];
+ const icon=$("#favouritePreviewIcon");setMealArt(icon,f.image_key);
  $("#favouritePreviewName").textContent=f.name;
  const host=$("#favouritePreviewIngredients");host.innerHTML="";
  const ingredients=f.ingredients||[];
@@ -306,7 +340,7 @@ async function loadMenuFavourites(){
 async function showFavourites(){
  await loadMenuFavourites();const host=$("#favouritesList");host.innerHTML="";
  if(!state.menuFavourites.length){host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it."; }
- state.menuFavourites.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");icon.textContent=mealImage(f.image_key)[1];const name=document.createElement("strong");name.textContent=f.name;const actions=document.createElement("div");actions.className="favourite-actions";const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{state.pendingFavourite=f;$("#favouritesDialog").close();openDatePicker(localISO(new Date()),"dinner","favourite");};const remove=document.createElement("button");remove.type="button";remove.className="favourite-remove";remove.textContent="×";remove.title="Remove favourite";remove.setAttribute("aria-label",`Remove ${f.name} from favourites`);remove.onclick=async()=>{if(!confirm(`Remove “${f.name}” from favourite meals? This won't delete meals already planned.`))return;const {error}=await db.from("menu_favourites").delete().eq("id",f.id);if(error)return toast("Couldn't remove favourite: "+error.message);state.menuFavourites=state.menuFavourites.filter(x=>x.id!==f.id);row.remove();if(!state.menuFavourites.length)host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it.";toast("Favourite removed.");};actions.append(use,remove);row.append(icon,name,actions);host.append(row);});
+ state.menuFavourites.forEach(f=>{const row=document.createElement("div");row.className="favourite-row";const icon=document.createElement("span");setMealArt(icon,f.image_key);const name=document.createElement("strong");name.textContent=f.name;const actions=document.createElement("div");actions.className="favourite-actions";const use=document.createElement("button");use.type="button";use.className="secondary-button compact";use.textContent="Add to menu";use.onclick=()=>{state.pendingFavourite=f;$("#favouritesDialog").close();openDatePicker(localISO(new Date()),"dinner","favourite");};const remove=document.createElement("button");remove.type="button";remove.className="favourite-remove";remove.textContent="×";remove.title="Remove favourite";remove.setAttribute("aria-label",`Remove ${f.name} from favourites`);remove.onclick=async()=>{if(!confirm(`Remove “${f.name}” from favourite meals? This won't delete meals already planned.`))return;const {error}=await db.from("menu_favourites").delete().eq("id",f.id);if(error)return toast("Couldn't remove favourite: "+error.message);state.menuFavourites=state.menuFavourites.filter(x=>x.id!==f.id);row.remove();if(!state.menuFavourites.length)host.textContent="No favourite meals saved yet. Save a meal as a favourite when adding it.";toast("Favourite removed.");};actions.append(use,remove);row.append(icon,name,actions);host.append(row);});
  $("#favouritesDialog").showModal();
 }
 async function addMealIngredients(entry){
@@ -512,7 +546,7 @@ function wire(){
  $("#openMealIconPicker").onclick=openMealIconPicker;
  $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
  $("#cancelMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
- $("#useMealIcon").onclick=()=>{updateSelectedMealArt();$("#mealIconPickerDialog").close();};
+ $("#useMealIcon").onclick=()=>{rememberMealIcon(state.selectedMealImage);updateSelectedMealArt();$("#mealIconPickerDialog").close();};
  $("#mealIconSearch").addEventListener("input",renderMealIconPicker);
  $("#mealIconMore").onclick=()=>{state.mealIconsExpanded=!state.mealIconsExpanded;renderMealIconPicker();};$("#closeMealDialog").onclick=()=>$("#mealDialog").close();$("#cancelMeal").onclick=()=>$("#mealDialog").close();$("#closeFavourites").onclick=()=>$("#favouritesDialog").close();
  $("#closeListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#cancelListPicker").onclick=()=>$("#shoppingListPickerDialog").close();$("#confirmListPicker").onclick=confirmMealIngredients;$("#closeDatePicker").onclick=()=>$("#datePickerDialog").close();$("#cancelDatePicker").onclick=()=>$("#datePickerDialog").close();$("#confirmDatePicker").onclick=confirmDatePicker;

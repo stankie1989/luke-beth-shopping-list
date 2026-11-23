@@ -1,4 +1,13 @@
-# Luke & Beth's Shopping List — Version 1.7.5
+# Luke & Beth's Shopping List — Version 1.7.6
+
+## Version 1.7.6 – Smarter meal illustrations
+- Added 16 original cartoon food illustrations, including sausages, sausage and mash, chicken nuggets, fish fingers, shepherd's pie, spaghetti bolognese and more.
+- Added meal-aware suggestions using dish names and common alternative terms.
+- Typing a meal name before opening the illustration picker now pre-fills search and suggests the closest matching artwork.
+- Added recently used illustrations, remembered locally on the device.
+- Existing emoji library remains available as a fallback.
+- Artwork is bundled and cached for offline use.
+- No Supabase SQL or database changes required.
 
 ## Version 1.7.5 – Add favourite meals to a selected day
 - When adding a meal from a calendar day, choose to create a new meal or pick a saved favourite.
