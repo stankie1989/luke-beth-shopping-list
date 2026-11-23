@@ -422,6 +422,44 @@ function renderFavouritesList(){
 }
 async function showFavourites(){await loadFavouriteCategories();await loadMenuFavourites();$("#favouriteSearch").value="";$("#favouriteCategoryFilter").innerHTML='<option value="all">All categories</option>';favouriteCategories.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;$("#favouriteCategoryFilter").append(o);});renderFavouritesList();$("#favouritesDialog").showModal();}
 
+
+function mealFinderNormalise(value){return normaliseMealText(String(value||"")).replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
+function findMealsFromIngredients(){
+ const raw=$("#mealFinderInput").value;
+ const have=raw.split(/[,;\n]+/).map(x=>mealFinderNormalise(x)).filter(Boolean);
+ const host=$("#mealFinderResults");host.innerHTML="";
+ if(!have.length){host.textContent="Enter at least one ingredient to search.";return;}
+ const results=(state.menuFavourites||[]).map(f=>{
+  const ingredients=(f.ingredients||[]).map(x=>({...x,_key:mealFinderNormalise(x.name)})).filter(x=>x._key);
+  const matched=ingredients.filter(ing=>have.some(h=>ing._key===h||ing._key.includes(h)||h.includes(ing._key)));
+  const missing=ingredients.filter(ing=>!matched.includes(ing));
+  const score=ingredients.length?matched.length/ingredients.length:0;
+  return {f,matched,missing,score};
+ }).filter(x=>x.matched.length>0).sort((a,b)=>b.score-a.score||b.matched.length-a.matched.length);
+ if(!results.length){host.textContent="No saved favourites matched those ingredients. Try different wording or add more ingredients.";return;}
+ results.forEach(result=>{
+  const card=document.createElement("article");card.className="meal-finder-card";
+  const head=document.createElement("div");head.className="meal-finder-card-head";
+  const art=document.createElement("span");art.className="meal-finder-art";setMealArt(art,result.f.image_key);
+  const title=document.createElement("strong");title.textContent=result.f.name;
+  const score=document.createElement("small");score.textContent=`${result.matched.length} of ${(result.f.ingredients||[]).length} ingredients available`;
+  const titleWrap=document.createElement("div");titleWrap.className="meal-finder-title";titleWrap.append(title,score);head.append(art,titleWrap);card.append(head);
+  const haveLine=document.createElement("p");haveLine.className="meal-finder-have";haveLine.textContent="You have: "+result.matched.map(x=>x.name).join(", ");card.append(haveLine);
+  const missingLine=document.createElement("p");missingLine.className="meal-finder-missing";missingLine.textContent=result.missing.length?"You'll need: "+result.missing.map(x=>x.name).join(", "):"You've got everything for this meal!";card.append(missingLine);
+  if(result.missing.length){
+   const add=document.createElement("button");add.type="button";add.className="secondary-button compact";add.textContent="Add missing ingredients to shopping list";
+   add.onclick=()=>addMealIngredients({...result.f,ingredients:result.missing.map(({name,quantity})=>({name,quantity}))});
+   card.append(add);
+  }
+  host.append(card);
+ });
+}
+async function openMealFinder(){
+ await loadMenuFavourites();
+ $("#mealFinderInput").value="";$("#mealFinderResults").innerHTML="";
+ $("#mealFinderDialog").showModal();
+}
+
 async function addMealIngredients(entry){
  const ingredients=entry.ingredients||[];if(!ingredients.length)return toast("No ingredients saved for this meal yet.");
  const {data:lists,error}=await db.from("shopping_lists").select("*").eq("household_id",state.householdId).order("created_at");
@@ -620,7 +658,7 @@ function wire(){
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
- $("#menuFavourites").onclick=showFavourites;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
+ $("#menuFavourites").onclick=showFavourites;$("#openMealFinder").onclick=openMealFinder;$("#closeMealFinder").onclick=()=>$("#mealFinderDialog").close();$("#findMealsButton").onclick=findMealsFromIngredients;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
  $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
@@ -656,7 +694,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.8.2",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.9",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

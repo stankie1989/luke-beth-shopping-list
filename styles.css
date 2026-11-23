@@ -408,3 +408,16 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .category-action-button.danger{color:#c34b4b}
 .category-built-in{font-size:.75rem;color:var(--muted);padding:5px 8px;background:var(--surface);border-radius:20px}
 @media(max-width:420px){.category-add-row{align-items:stretch;flex-direction:column}.category-add-row button{width:100%}.category-action-button{padding:7px 8px;font-size:.82rem}}
+
+/* 1.7.9 meal finder */
+.meal-finder-input{width:100%;box-sizing:border-box;margin:8px 0 12px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);font:inherit;resize:vertical}
+.meal-finder-results{display:grid;gap:12px;margin-top:16px}
+.meal-finder-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:var(--surface)}
+.meal-finder-card-head{display:flex;align-items:center;gap:12px}
+.meal-finder-art{width:48px;height:48px;display:grid;place-items:center;flex:none}
+.meal-finder-title{display:grid;gap:3px;min-width:0}
+.meal-finder-title strong{font-size:1rem}
+.meal-finder-title small,.meal-finder-card p{color:var(--muted);font-size:.86rem}
+.meal-finder-card p{margin:10px 0 0;line-height:1.4}
+.meal-finder-card .meal-finder-missing{color:var(--text)}
+.meal-finder-card button{margin-top:12px;white-space:normal}
