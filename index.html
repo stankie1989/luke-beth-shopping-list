@@ -119,9 +119,9 @@
         <section class="more-section invite-section"><h3>Invite your partner</h3><p class="more-description">Share this private code with your partner so they can join your household.</p>
           <div class="invite-code-card"><span id="inviteCodeDisplay" class="invite-code-value">Loading…</span><button id="copyInviteCode" class="secondary-button" type="button">Copy code</button></div>
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
-        <section class="more-section"><h3>Shopping list</h3><p class="more-description">Choose how your shopping items are displayed.</p><label class="category-toggle-row" for="showShoppingCategories"><span><strong>Show categories</strong><small>Group items into supermarket sections</small></span><input id="showShoppingCategories" type="checkbox"></label></section><section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
+        <section class="more-section"><h3>Categories</h3><p class="more-description">Create and manage categories shared with your household.</p><button type="button" class="secondary-button" id="openManageCategories">Manage categories</button></section><section class="more-section"><h3>Shopping list</h3><p class="more-description">Choose how your shopping items are displayed.</p><label class="category-toggle-row" for="showShoppingCategories"><span><strong>Show categories</strong><small>Group items into supermarket sections</small></span><input id="showShoppingCategories" type="checkbox"></label></section><section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.12.1</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.13</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -141,10 +141,21 @@
     </nav>
   </div>
 
-  <dialog id="itemCategoryDialog" class="app-dialog item-category-dialog">
+  <dialog id="manageCategoriesDialog" class="app-dialog manage-categories-dialog">
+ <div class="dialog-heading"><div><span class="section-icon">🗂️</span><h2>Manage categories</h2></div><button type="button" class="dialog-close" id="closeManageCategories">×</button></div>
+ <p class="more-description">These categories are shared with everyone in your household.</p>
+ <form id="addCategoryForm" class="add-category-form"><input id="newCategoryName" maxlength="32" placeholder="New category name" required><button class="primary-button" type="submit">Add</button></form>
+ <div id="manageCategoryList" class="manage-category-list"></div>
+ <button type="button" class="category-picker-cancel" id="doneManageCategories">Done</button>
+</dialog>
+<dialog id="renameCategoryDialog" class="app-dialog item-action-dialog">
+ <div class="dialog-heading"><div><span class="section-icon">✏️</span><h2>Rename category</h2></div><button type="button" class="dialog-close" id="closeRenameCategory">×</button></div>
+ <form id="renameCategoryForm"><label for="renameCategoryName">Category name</label><input id="renameCategoryName" maxlength="32" required><div class="dialog-actions"><button type="button" class="secondary-button" id="cancelRenameCategory">Cancel</button><button type="submit" class="primary-button">Save</button></div></form>
+</dialog>
+<dialog id="itemCategoryDialog" class="app-dialog item-category-dialog">
   <div class="dialog-heading"><div><span class="section-icon">🗂️</span><h2>Change category</h2></div><button type="button" class="dialog-close" id="closeItemCategory">×</button></div>
   <p id="itemCategoryDescription" class="more-description"></p>
-  <div id="itemCategoryChoices" class="item-category-choices"></div>
+  <div id="itemCategoryChoices" class="item-category-choices"></div><button type="button" class="secondary-button manage-categories-launch" id="launchManageCategories">Manage categories</button>
   <button type="button" class="category-picker-cancel" id="cancelItemCategory">Cancel</button>
 </dialog>
 <dialog id="editItemDialog" class="app-dialog item-action-dialog">
@@ -309,6 +320,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.12.1"></script>
+  <script src="./app.js?v=1.7.13"></script>
 </body>
 </html>

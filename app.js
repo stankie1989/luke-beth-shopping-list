@@ -55,6 +55,7 @@ function renderListControls(){
 let listRefreshRunning=false;
 async function refreshCurrentList(){
  if(!state.currentListId||listRefreshRunning)return;listRefreshRunning=true;
+ await loadHouseholdCategories();
  const [{data:items,error},{data:activity}] = await Promise.all([
   db.from("shopping_items").select("*").eq("household_id",state.householdId).eq("list_id",state.currentListId).order("created_at"),
   db.from("activity_events").select("*").eq("household_id",state.householdId).eq("list_id",state.currentListId).order("created_at",{ascending:false}).limit(12)
@@ -638,14 +639,29 @@ async function confirmMealIngredients(){
  const entry=state.pendingMealIngredients;if(!entry)return;const targetId=state.selectedShoppingListId;
  const {data:target,error:targetError}=await db.from("shopping_lists").select("*").eq("id",targetId).single();if(targetError||!target)return toast("Couldn't find that shopping list.");
  const btn=$("#confirmListPicker");btn.disabled=true;btn.textContent="Adding…";let failures=0;
- for(const ing of entry.ingredients||[]){const numeric=Number(ing.quantity),itemName=Number.isFinite(numeric)&&numeric>0?ing.name:`${ing.name} (${ing.quantity})`,addQty=Number.isFinite(numeric)&&numeric>0?Math.max(1,Math.round(numeric)):1;const {data:existing,error:lookupError}=await db.from("shopping_items").select("*").eq("list_id",target.id).ilike("name",itemName).maybeSingle();if(lookupError){failures++;continue;}if(existing){const {error}=await db.from("shopping_items").update({quantity:existing.quantity+addQty,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",existing.id);if(error)failures++;}else{const {error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:target.id,name:itemName,quantity:addQty,is_bought:false,category:guessShoppingCategory(itemName),created_by:state.user.id,updated_by:state.user.id});if(error)failures++;}}
+ for(const ing of entry.ingredients||[]){const numeric=Number(ing.quantity),itemName=Number.isFinite(numeric)&&numeric>0?ing.name:`${ing.name} (${ing.quantity})`,addQty=Number.isFinite(numeric)&&numeric>0?Math.max(1,Math.round(numeric)):1;const {data:existing,error:lookupError}=await db.from("shopping_items").select("*").eq("list_id",target.id).ilike("name",itemName).maybeSingle();if(lookupError){failures++;continue;}if(existing){const {error}=await db.from("shopping_items").update({quantity:existing.quantity+addQty,updated_by:state.user.id,updated_at:new Date().toISOString()}).eq("id",existing.id);if(error)failures++;}else{const {error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:target.id,name:itemName,quantity:addQty,is_bought:false,category:await categoryForNewItem(itemName),created_by:state.user.id,updated_by:state.user.id});if(error)failures++;}}
  $("#shoppingListPickerDialog").close();btn.textContent="Add ingredients";btn.disabled=false;state.pendingMealIngredients=null;if(target.id===state.currentListId)await refreshCurrentList();toast(failures?`Added with ${failures} ingredient error(s).`:`Ingredients added to ${target.name}.`);
 }
 
-const SHOP_CATEGORIES=["Fruit & Veg","Meat & Fish","Dairy & Eggs","Bakery","Frozen","Tins & Dry Goods","Drinks","Snacks","Household","Other"];
+const DEFAULT_SHOP_CATEGORIES=["Fruit & Veg","Meat & Fish","Dairy & Eggs","Bakery","Frozen","Tins & Dry Goods","Drinks","Snacks","Household","Other"];
+let SHOP_CATEGORIES=[...DEFAULT_SHOP_CATEGORIES],learnedCategoryRules=[];
 const CATEGORY_KEY="lb-show-shopping-categories";
 state.showShoppingCategories=localStorage.getItem(CATEGORY_KEY)==="true";
+function normalizeItemName(name){return String(name||"").trim().toLowerCase().replace(/\s+/g," ");}
+async function loadHouseholdCategories(){
+ const [cats,rules]=await Promise.all([
+  db.from("household_categories").select("*").eq("household_id",state.householdId).order("sort_order").order("name"),
+  db.from("household_item_category_rules").select("*").eq("household_id",state.householdId)
+ ]);
+ if(cats.error||rules.error){console.warn("Category tables unavailable. Run the 1.7.13 SQL migration.",cats.error||rules.error);SHOP_CATEGORIES=[...DEFAULT_SHOP_CATEGORIES];learnedCategoryRules=[];return;}
+ const custom=(cats.data||[]).map(x=>x.name);
+ SHOP_CATEGORIES=[...new Set([...DEFAULT_SHOP_CATEGORIES,...custom])];
+ learnedCategoryRules=rules.data||[];
+}
 function guessShoppingCategory(name){
+ const normalized=normalizeItemName(name);
+ const learned=learnedCategoryRules.find(x=>x.normalized_item_name===normalized);
+ if(learned&&SHOP_CATEGORIES.includes(learned.category))return learned.category;
  const n=String(name||"").toLowerCase();
  const rules=[
   ["Fruit & Veg",/\b(apple|banana|orange|grape|strawberr|blueberr|raspberr|lettuce|tomato|potato|carrot|onion|broccoli|cucumber|pepper|spinach|mushroom|avocado|salad|fruit|veg)\b/],
@@ -654,22 +670,78 @@ function guessShoppingCategory(name){
   ["Bakery",/\b(bread|roll|bun|bagel|croissant|wrap|pitta|pita|cake|muffin|pastry)\b/],
   ["Frozen",/\b(frozen|ice cream|pizza|chips|nugget|waffle)\b/],
   ["Tins & Dry Goods",/\b(pasta|rice|noodle|flour|sugar|cereal|oat|bean|lentil|tinned|tin|sauce|stock|coffee|tea)\b/],
-  ["Drinks",/\b(water|juice|cola|lemonade|drink|squash|fizzy|pop)\b/],
+  ["Drinks",/\b(water|juice|cola|lemonade|drink|squash|fizzy|pop|ale|beer|wine|cider|lager|soda)\b/],
   ["Snacks",/\b(crisp|crisps|chocolate|biscuit|sweet|snack|nut|popcorn)\b/],
   ["Household",/\b(washing|detergent|toilet|tissue|kitchen roll|cleaner|bleach|shampoo|soap|toothpaste|bin bag|foil|cling film)\b/]
  ];
- return rules.find(x=>x[1].test(n))?.[0]||"Other";
+ const match=rules.find(x=>x[1].test(n))?.[0]||"Other";
+ return SHOP_CATEGORIES.includes(match)?match:"Other";
+}
+async function categoryForNewItem(name){
+ const normalized=normalizeItemName(name);
+ const rule=learnedCategoryRules.find(x=>x.normalized_item_name===normalized);
+ return rule?.category&&SHOP_CATEGORIES.includes(rule.category)?rule.category:guessShoppingCategory(name);
 }
 async function backfillItemCategories(){
  const uncategorised=state.items.filter(x=>!x.category);
- if(!uncategorised.length)return;
  for(const item of uncategorised){
-  const category=guessShoppingCategory(item.name);
-  item.category=category;
+  const category=await categoryForNewItem(item.name);item.category=category;
   db.from("shopping_items").update({category}).eq("id",item.id).then(({error})=>{if(error)console.warn("Category save failed",error);});
  }
 }
-async function setItemCategory(item,category){if(!SHOP_CATEGORIES.includes(category))return;await update(item,{category});}
+async function setItemCategory(item,category){
+ if(!SHOP_CATEGORIES.includes(category))return;
+ if(!await update(item,{category}))return;
+ const normalized=normalizeItemName(item.name);
+ const {data,error}=await db.from("household_item_category_rules").upsert({household_id:state.householdId,normalized_item_name:normalized,category,updated_by:state.user.id},{onConflict:"household_id,normalized_item_name"}).select("*").single();
+ if(error){toast("Category changed, but couldn't save the learning rule. Check the SQL migration.");return;}
+ learnedCategoryRules=learnedCategoryRules.filter(x=>x.normalized_item_name!==normalized);learnedCategoryRules.push(data);
+ toast(`I'll remember ${item.name} as ${category}.`);
+}
+let renamingCategory=null;
+function renderManageCategories(){
+ const host=$("#manageCategoryList");host.innerHTML="";
+ SHOP_CATEGORIES.forEach(cat=>{
+  const row=document.createElement("div");row.className="manage-category-row";
+  const name=document.createElement("strong");name.textContent=cat;row.append(name);
+  if(!DEFAULT_SHOP_CATEGORIES.includes(cat)){
+   const edit=document.createElement("button");edit.type="button";edit.className="secondary-button";edit.textContent="Rename";edit.onclick=()=>openRenameCategory(cat);
+   const del=document.createElement("button");del.type="button";del.className="danger-button";del.textContent="Delete";del.onclick=()=>deleteCategory(cat);
+   row.append(edit,del);
+  }else{const tag=document.createElement("small");tag.textContent="Default";row.append(tag);}
+  host.append(row);
+ });
+}
+async function addCategory(e){
+ e.preventDefault();const name=$("#newCategoryName").value.trim();
+ if(!name)return;if(SHOP_CATEGORIES.some(x=>x.toLowerCase()===name.toLowerCase()))return toast("That category already exists.");
+ const {data,error}=await db.from("household_categories").insert({household_id:state.householdId,name,sort_order:SHOP_CATEGORIES.length,created_by:state.user.id}).select("*").single();
+ if(error)return toast("Couldn't add category: "+error.message);
+ SHOP_CATEGORIES.push(data.name);$("#newCategoryName").value="";renderManageCategories();renderItems();toast(`${name} added.`);
+}
+function openRenameCategory(name){renamingCategory=name;$("#renameCategoryName").value=name;$("#renameCategoryDialog").showModal();}
+async function renameCategory(e){
+ e.preventDefault();if(!renamingCategory)return;const next=$("#renameCategoryName").value.trim();
+ if(!next)return;if(SHOP_CATEGORIES.some(x=>x.toLowerCase()===next.toLowerCase()&&x!==renamingCategory))return toast("That category already exists.");
+ const old=renamingCategory;
+ const {error}=await db.from("household_categories").update({name:next}).eq("household_id",state.householdId).eq("name",old);
+ if(error)return toast("Couldn't rename category: "+error.message);
+ const {error:ruleError}=await db.from("household_item_category_rules").update({category:next}).eq("household_id",state.householdId).eq("category",old);
+ if(ruleError)return toast("Category renamed, but some learning rules may need checking.");
+ const {error:itemError}=await db.from("shopping_items").update({category:next}).eq("household_id",state.householdId).eq("category",old);
+ if(itemError)return toast("Category renamed, but some existing items may not have updated.");
+ SHOP_CATEGORIES=SHOP_CATEGORIES.map(x=>x===old?next:x);learnedCategoryRules=learnedCategoryRules.map(x=>x.category===old?{...x,category:next}:x);
+ $("#renameCategoryDialog").close();renamingCategory=null;renderManageCategories();renderItems();toast("Category renamed.");
+}
+async function deleteCategory(name){
+ if(!confirm(`Delete the custom category "${name}"? Items using it will be moved to Other.`))return;
+ const {error}=await db.from("household_categories").delete().eq("household_id",state.householdId).eq("name",name);
+ if(error)return toast("Couldn't delete category: "+error.message);
+ await db.from("shopping_items").update({category:"Other"}).eq("household_id",state.householdId).eq("category",name);
+ await db.from("household_item_category_rules").delete().eq("household_id",state.householdId).eq("category",name);
+ SHOP_CATEGORIES=SHOP_CATEGORIES.filter(x=>x!==name);learnedCategoryRules=learnedCategoryRules.filter(x=>x.category!==name);
+ renderManageCategories();renderItems();toast(`${name} deleted. Its items moved to Other.`);
+}
 function renderItems(){
  const host=$("#items");host.innerHTML="";const modeHost=$("#shoppingModeItems");if(modeHost)modeHost.innerHTML="";
  const ordered=state.showShoppingCategories?SHOP_CATEGORIES.flatMap(cat=>state.items.filter(x=>(x.category||guessShoppingCategory(x.name))===cat)):state.items;
@@ -866,7 +938,7 @@ function wire(){
  $("#createHousehold").onclick=createHome;$("#joinHousehold").onclick=joinHome;$("#signOutSetup").onclick=signOut;$("#signOutButton").onclick=()=>{ $("#settingsDialog").close();signOut();};
  $("#newItem").addEventListener("focus",()=>setEditing(true));
  $("#newItem").addEventListener("blur",()=>setEditing(false));
- $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:state.currentListId,name,quantity:1,is_bought:false,category:guessShoppingCategory(name),created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast(`Added to ${currentList()?.name||"your list"}.`);}};
+ $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const category=await categoryForNewItem(name);const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:state.currentListId,name,quantity:1,is_bought:false,category,created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast(`Added to ${currentList()?.name||"your list"}.`);}};
  $("#clearBought").onclick=async()=>{const bought=state.items.filter(x=>x.is_bought);if(!bought.length)return toast("No bought items to clear.");const button=$("#clearBought");button.disabled=true;const {error}=await db.from("shopping_items").delete().eq("household_id",state.householdId).eq("list_id",state.currentListId).eq("is_bought",true);button.disabled=false;if(error){toast("Couldn't clear bought items: "+error.message);return;}const removedIds=new Set(bought.map(x=>x.id));state.items=state.items.filter(x=>!removedIds.has(x.id));renderItems();toast(`Cleared ${bought.length} bought item${bought.length===1?"":"s"}.`);};
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
@@ -888,7 +960,13 @@ function wire(){
  $("#settingsDialog").addEventListener("click",e=>{if(e.target===$("#settingsDialog"))$("#settingsDialog").close();});$("#shareDialog").addEventListener("click",e=>{if(e.target===$("#shareDialog"))$("#shareDialog").close();});
  $("#copyInviteCode").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");try{await navigator.clipboard.writeText(code);$("#inviteStatus").textContent="Invitation code copied.";toast("Invite code copied.");}catch(e){$("#inviteStatus").textContent="Please copy the code manually."; }};
  $("#shareInvite").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");const text=`Join my Luke & Beth shopping list! Open https://stankie1989.github.io/luke-beth-shopping-list/ and enter this invitation code: ${code}`;if(navigator.share){try{await navigator.share({title:"Luke & Beth’s Shopping List",text});}catch(e){if(e.name!=="AbortError")toast("Couldn't open sharing.");}}else{try{await navigator.clipboard.writeText(text);toast("Invitation copied — paste it into a message to Beth.");}catch(e){$("#inviteStatus").textContent=text;}}};
- $("#closeItemCategory").onclick=closeItemCategoryPicker;$("#cancelItemCategory").onclick=closeItemCategoryPicker;$("#itemCategoryDialog").addEventListener("cancel",()=>{categoryEditingItem=null;});$("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
+ $("#closeItemCategory").onclick=closeItemCategoryPicker;$("#cancelItemCategory").onclick=closeItemCategoryPicker;
+ $("#openManageCategories").onclick=()=>{renderManageCategories();$("#manageCategoriesDialog").showModal();};
+ $("#launchManageCategories").onclick=()=>{renderManageCategories();$("#manageCategoriesDialog").showModal();};
+ $("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#doneManageCategories").onclick=()=>$("#manageCategoriesDialog").close();
+ $("#addCategoryForm").onsubmit=addCategory;$("#renameCategoryForm").onsubmit=renameCategory;
+ $("#closeRenameCategory").onclick=()=>{$("#renameCategoryDialog").close();renamingCategory=null;};
+ $("#cancelRenameCategory").onclick=()=>{$("#renameCategoryDialog").close();renamingCategory=null;};$("#itemCategoryDialog").addEventListener("cancel",()=>{categoryEditingItem=null;});$("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
  $("#closeDeleteItem").onclick=closeDeleteItem;$("#cancelDeleteItem").onclick=closeDeleteItem;$("#confirmDeleteItem").onclick=confirmDeleteShoppingItem;$("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};$("#showShoppingCategories").onchange=e=>{state.showShoppingCategories=e.target.checked;localStorage.setItem(CATEGORY_KEY,String(state.showShoppingCategories));renderItems();};
  $("#moreSignOut").onclick=signOut;
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
@@ -909,7 +987,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.12.1",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.13",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
