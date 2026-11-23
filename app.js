@@ -607,7 +607,25 @@ function showMealRecipe(recipe,source){
  const host=$('#mealRecipeContent');host.innerHTML='';const title=document.createElement('h3');title.textContent=recipe.name;host.append(title);
  if(recipe.image){const img=document.createElement('img');img.className='meal-recipe-image';img.src=recipe.image;img.alt=recipe.name;host.append(img);}
  const ingredients=document.createElement('h4');ingredients.textContent='Ingredients';host.append(ingredients);const ul=document.createElement('ul');(recipe.ingredients||[]).forEach(x=>{const li=document.createElement('li');li.textContent=[x.quantity,x.name].filter(Boolean).join(' ');ul.append(li);});host.append(ul);
- const instructions=document.createElement('h4');instructions.textContent='Method';host.append(instructions);const method=document.createElement('p');method.className='meal-recipe-method';method.textContent=recipe.instructions||'No cooking instructions were supplied for this recipe.';host.append(method);
+ const instructions=document.createElement('h4');instructions.textContent='Method';host.append(instructions);
+ const method=document.createElement('div');method.className='meal-recipe-method';
+ const rawMethod=String(recipe.instructions||'No cooking instructions were supplied for this recipe.').replace(/\\r\\n?/g,'\\n').trim();
+ // Online recipes commonly return numbered instructions as one long string.
+ // Turn those into separate list items; otherwise preserve paragraph breaks.
+ const stepMatches=[...rawMethod.matchAll(/(?:^|\\s)(\\d{1,2})[.)]\\s+/g)];
+ if(stepMatches.length>=2){
+   const list=document.createElement('ol');list.className='meal-recipe-steps';
+   for(let i=0;i<stepMatches.length;i++){
+     const start=stepMatches[i].index+stepMatches[i][0].length;
+     const end=i+1<stepMatches.length?stepMatches[i+1].index:rawMethod.length;
+     const text=rawMethod.slice(start,end).trim();
+     if(text){const li=document.createElement('li');li.textContent=text;list.append(li);}
+   }
+   method.append(list);
+ }else{
+   rawMethod.split(/\\n\\s*\\n/).filter(Boolean).forEach(part=>{const p=document.createElement('p');p.textContent=part.trim();method.append(p);});
+ }
+ host.append(method);
  const sourceLine=document.createElement('p');sourceLine.className='meal-recipe-source';sourceLine.textContent='Recipe source: '+source+' · Recipe data provided by TheMealDB';host.append(sourceLine);const credit=document.createElement('a');credit.href='https://www.themealdb.com/';credit.target='_blank';credit.rel='noopener';credit.textContent='TheMealDB';credit.className='meal-recipe-link';host.append(credit);
  if(recipe.url){const link=document.createElement('a');link.href=recipe.url;link.target='_blank';link.rel='noopener';link.textContent='Open original recipe';link.className='meal-recipe-link';host.append(link);}
  $('#mealRecipeDialog').showModal();
