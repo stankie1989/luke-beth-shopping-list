@@ -1,3 +1,13 @@
+Luke & Beth Shared Shopping List — Version 1.7.16.1
+
+Dashboard refinement, built from 1.7.16:
+- Removes the list-change status banner, Share with Beth button and share hint from the Dashboard only. Sharing remains available on the Shopping tab.
+- Removes the recent household activity section from the Dashboard.
+- Fixes dinner cards to read the meal planner's saved `name` field.
+- Improves mobile card sizing and wrapping to keep dashboard text and category bars inside their borders.
+- Keeps the Shopping, Dashboard, Menu and More navigation order.
+- No SQL or database changes required.
+
 Luke & Beth Shared Shopping List — Version 1.7.15.5
 
 Update: recipe method paragraphs and numbered steps now display as separate softly tinted outlined cards, alternating blue, teal and purple. Built from confirmed working 1.7.15.4. Preserves menu cleanup, meal finder and update checks. No SQL required.
