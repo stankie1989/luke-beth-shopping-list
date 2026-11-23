@@ -505,3 +505,8 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .manage-category-row button{padding:7px 9px;font-size:.78rem}
 .manage-category-row small{color:var(--muted)}
 .manage-categories-launch{width:100%;margin-bottom:10px}
+
+/* 1.7.13.1: compact category marker */
+.item-category-trigger{width:27px;height:27px;min-width:27px;padding:0;border:1px solid color-mix(in srgb,var(--category-accent) 45%,transparent);border-radius:50%;background:color-mix(in srgb,var(--category-accent) 15%,transparent);color:var(--category-accent);font-size:12px;font-weight:850;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-shadow:none}
+.item-category-trigger:active{background:color-mix(in srgb,var(--category-accent) 25%,transparent);transform:scale(.96)}
+@media(max-width:380px){.item-category-trigger{width:25px;height:25px;min-width:25px;font-size:11px}}
