@@ -535,10 +535,3 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .meal-recipe-method{white-space:pre-line;line-height:1.6;color:var(--text)}
 .meal-recipe-source{font-size:.8rem;color:var(--muted)}
 .meal-recipe-link{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--surface);color:var(--accent);font-weight:650;text-decoration:none}
-
-/* 1.7.15.1: clearer spacing in online recipe methods */
-.meal-recipe-method{font-size:1rem;line-height:1.65;color:var(--text)}
-.meal-recipe-method p{margin:0 0 16px}
-.meal-recipe-steps{margin:0;padding-left:27px;display:flex;flex-direction:column;gap:14px;line-height:1.65}
-.meal-recipe-steps li{padding-left:5px}
-.meal-recipe-steps li::marker{font-weight:750;color:var(--accent)}
