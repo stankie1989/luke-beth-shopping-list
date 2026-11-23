@@ -394,3 +394,17 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .favourite-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .favourite-filter-row select{flex:1;min-width:130px}
 #manageFavouriteCategories{white-space:nowrap}
+
+/* 1.7.8.1 - polished shared category manager */
+.manage-categories-dialog{width:min(92vw,520px);max-height:85vh;overflow-y:auto}
+.category-manager-note{color:var(--muted,#777);font-size:.92rem;line-height:1.45;margin:4px 0 16px}
+.category-add-row{display:flex;gap:8px;align-items:center;margin-bottom:18px}
+.category-add-row input{min-width:0;flex:1}
+.category-add-row .primary-button{white-space:nowrap}
+.manage-categories-list{display:flex;flex-direction:column;gap:8px}
+.category-manage-row{display:flex;align-items:center;gap:8px;padding:11px 12px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+.category-manage-name{font-weight:600;flex:1;min-width:0}
+.category-action-button{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--text);font-weight:600}
+.category-action-button.danger{color:#c34b4b}
+.category-built-in{font-size:.75rem;color:var(--muted);padding:5px 8px;background:var(--surface);border-radius:20px}
+@media(max-width:420px){.category-add-row{align-items:stretch;flex-direction:column}.category-add-row button{width:100%}.category-action-button{padding:7px 8px;font-size:.82rem}}

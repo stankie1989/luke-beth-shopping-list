@@ -229,6 +229,12 @@
     <div class="favourite-filter-row"><label for="favouriteCategoryFilter">Category</label><select id="favouriteCategoryFilter"><option value="all">All categories</option></select><button type="button" class="secondary-button compact" id="manageFavouriteCategories">Manage</button></div>
     <div id="favouritesList" class="favourites-list"></div>
   </dialog>
+  <dialog id="manageCategoriesDialog" class="app-dialog manage-categories-dialog">
+    <div class="dialog-heading"><div><span class="section-icon">✦</span><h2>Manage categories</h2></div><button type="button" class="dialog-close" id="closeManageCategories">×</button></div>
+    <p class="category-manager-note">Add your own categories or manage the ones you've created. Changes are shared with your household.</p>
+    <div class="category-add-row"><input id="newCategoryName" type="text" maxlength="40" placeholder="e.g. Slow Cooker Meals"><button type="button" class="primary-button" id="addCategorySubmit">Add category</button></div>
+    <div id="manageCategoriesList" class="manage-categories-list"></div>
+  </dialog>
   <dialog id="manageListsDialog" class="modal">
     <div class="modal-card"><div class="modal-title"><h2>Manage your lists</h2><button class="icon-button close" id="closeManageLists" type="button" aria-label="Close">×</button></div>
       <p class="modal-note manage-lists-intro">Choose whether each list is shared with your household or private to you.</p>

@@ -110,36 +110,53 @@ async function saveFavouriteCategory(f,category){
  f.category=category;toast(`${f.name} categorised as ${category}.`);
 }
 async function manageFavouriteCategories(){
- const current=await db.from("household_meal_categories").select("*").eq("household_id",state.householdId).order("name");
- if(current.error)return toast("Couldn't load categories: "+current.error.message);
- const names=[...new Set([...DEFAULT_FAVOURITE_CATEGORIES,...(current.data||[]).map(x=>x.name)])];
- const action=prompt("Manage shared categories\\n\\nEnter a category name to add, or type RENAME or DELETE to manage an existing category.");
- if(action===null)return;
- if(action.trim().toUpperCase()==="RENAME"){
-  const oldName=prompt("Which category would you like to rename?\\n"+names.join(", "));if(!oldName)return;
-  if(DEFAULT_FAVOURITE_CATEGORIES.includes(oldName))return toast("Built-in categories cannot be renamed. You can add your own category instead.");
-  const newName=prompt("New category name:",oldName);if(!newName||!newName.trim())return;
-  const {error}=await db.from("household_meal_categories").update({name:newName.trim()}).eq("household_id",state.householdId).eq("name",oldName);
+ await loadFavouriteCategories();
+ renderCategoryManager();
+ $("#manageCategoriesDialog").showModal();
+}
+function renderCategoryManager(){
+ const list=$("#manageCategoriesList");list.innerHTML="";
+ favouriteCategories.forEach(name=>{
+  const isDefault=DEFAULT_FAVOURITE_CATEGORIES.includes(name);
+  const row=document.createElement("div");row.className="category-manage-row";
+  const label=document.createElement("span");label.className="category-manage-name";label.textContent=name;row.append(label);
+  if(!isDefault){
+   const rename=document.createElement("button");rename.type="button";rename.className="category-action-button";rename.textContent="Rename";
+   rename.onclick=async()=>{
+    const input=$("#newCategoryName");input.value=name;input.dataset.rename=name;input.focus();$("#addCategorySubmit").textContent="Save name";
+   };
+   const del=document.createElement("button");del.type="button";del.className="category-action-button danger";del.textContent="Delete";
+   del.onclick=async()=>{
+    if(!confirm(`Delete “${name}”? Meals using it will return to their automatic category.`))return;
+    const {error}=await db.from("menu_favourites").update({category:null}).eq("household_id",state.householdId).eq("category",name);
+    if(error)return toast("Couldn't reset meal categories: "+error.message);
+    const {error:deleteError}=await db.from("household_meal_categories").delete().eq("household_id",state.householdId).eq("name",name);
+    if(deleteError)return toast("Couldn't delete category: "+deleteError.message);
+    await loadFavouriteCategories();renderCategoryManager();renderFavouritesList();toast("Category deleted.");
+   };
+   row.append(rename,del);
+  }else{
+   const fixed=document.createElement("span");fixed.className="category-built-in";fixed.textContent="Default";row.append(fixed);
+  }
+  list.append(row);
+ });
+}
+async function saveManagedCategory(){
+ const input=$("#newCategoryName"),name=input.value.trim().slice(0,40),oldName=input.dataset.rename||"";
+ if(!name)return toast("Enter a category name first.");
+ if(oldName){
+  const {error}=await db.from("household_meal_categories").update({name}).eq("household_id",state.householdId).eq("name",oldName);
   if(error)return toast("Couldn't rename category: "+error.message);
-  const {error:updateError}=await db.from("menu_favourites").update({category:newName.trim()}).eq("household_id",state.householdId).eq("category",oldName);
-  if(updateError)return toast("Category renamed, but some meal assignments could not be updated: "+updateError.message);
+  const {error:updateError}=await db.from("menu_favourites").update({category:name}).eq("household_id",state.householdId).eq("category",oldName);
+  if(updateError)return toast("Category renamed, but meal assignments could not be updated: "+updateError.message);
   toast("Category renamed.");
- }else if(action.trim().toUpperCase()==="DELETE"){
-  const oldName=prompt("Which custom category would you like to delete?\\n"+names.filter(n=>!DEFAULT_FAVOURITE_CATEGORIES.includes(n)).join(", "));if(!oldName)return;
-  if(DEFAULT_FAVOURITE_CATEGORIES.includes(oldName))return toast("Built-in categories cannot be deleted.");
-  if(!confirm(`Delete category “${oldName}”? Meals using it will return to their automatic category.`))return;
-  const {error}=await db.from("household_meal_categories").delete().eq("household_id",state.householdId).eq("name",oldName);
-  if(error)return toast("Couldn't delete category: "+error.message);
-  const {error:updateError}=await db.from("menu_favourites").update({category:null}).eq("household_id",state.householdId).eq("category",oldName);
-  if(updateError)return toast("Category deleted, but meal assignments could not be reset: "+updateError.message);
-  toast("Category deleted.");
  }else{
-  const name=action.trim().slice(0,40);if(!name)return;
   const {error}=await db.from("household_meal_categories").upsert({household_id:state.householdId,name,created_by:state.user.id},{onConflict:"household_id,name"});
   if(error)return toast("Couldn't add category: "+error.message);
   toast("Shared category added.");
  }
- await loadFavouriteCategories();renderFavouritesList();
+ input.value="";delete input.dataset.rename;$("#addCategorySubmit").textContent="Add category";
+ await loadFavouriteCategories();renderCategoryManager();renderFavouritesList();
 }
 const CUSTOM_MEAL_ART={
  sausages:{file:"sausages.png",aliases:["sausage","sausages","banger","bangers","pork sausage","grilled sausage"]},
@@ -603,7 +620,7 @@ function wire(){
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
- $("#menuFavourites").onclick=showFavourites;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
+ $("#menuFavourites").onclick=showFavourites;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
  $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
