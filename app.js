@@ -658,29 +658,93 @@ async function loadHouseholdCategories(){
  SHOP_CATEGORIES=[...new Set([...DEFAULT_SHOP_CATEGORIES,...custom])];
  learnedCategoryRules=rules.data||[];
 }
+const CATEGORY_CONCEPTS={
+ "Fruit & Veg":["fruit","vegetable","produce","salad","fresh produce","greengrocery"],
+ "Meat & Fish":["meat","fish","seafood","poultry","butcher","protein"],
+ "Dairy & Eggs":["dairy","milk","cheese","yoghurt","yogurt","eggs"],
+ "Bakery":["bakery","bread","baked goods","pastry"],
+ "Frozen":["frozen","freezer","ice cream","frozen food"],
+ "Tins & Dry Goods":["tinned","canned","cupboard","pantry","dry goods","pasta","rice"],
+ "Drinks":["drink","drinks","beverage","beverages","liquid","soft drink"],
+ "Snacks":["snack","snacks","treat","treats","confectionery","sweets"],
+ "Household":["cleaning","household","laundry","home care","toiletries","personal care"],
+ "Pet Food":["pet","pets","animal","dog","dogs","cat","cats","puppy","kitten","kibble","pet food"],
+ "Baby Products":["baby","babies","infant","nappy","nappies","diaper","diapers","wipes","formula"],
+ "Toiletries":["toiletry","toiletries","personal care","shampoo","conditioner","body wash","deodorant","toothpaste"],
+ "Cleaning Products":["cleaning","cleaner","detergent","washing up","dishwasher","bleach","disinfectant"],
+ "Alcohol":["alcohol","beer","ale","wine","cider","lager","spirits"],
+ "Tea & Coffee":["tea","coffee","hot drinks","hot beverages"],
+ "Health & Beauty":["health","beauty","cosmetics","skincare","makeup","vitamins"]
+};
+const PRODUCT_TERMS={
+ "Fruit & Veg":["apple","banana","orange","grape","strawberry","blueberry","raspberry","lettuce","tomato","potato","carrot","onion","broccoli","cucumber","pepper","spinach","mushroom","avocado","salad","fruit","veg","leek","pear","cabbage","courgette","celery","garlic"],
+ "Meat & Fish":["chicken","beef","pork","lamb","sausage","bacon","ham","mince","steak","turkey","fish","salmon","tuna","prawn","cod","haddock","chops","meatballs"],
+ "Dairy & Eggs":["milk","cheese","yoghurt","yogurt","butter","cream","egg","custard"," fromage","mozzarella","cheddar"],
+ "Bakery":["bread","roll","bun","bagel","croissant","wrap","pitta","pita","cake","muffin","pastry","crumpet","toast"],
+ "Frozen":["frozen","ice cream","pizza","chips","fries","nugget","waffle","fish fingers","frozen peas","frozen vegetables"],
+ "Tins & Dry Goods":["pasta","rice","noodle","flour","sugar","cereal","oat","bean","lentil","tinned","tin","sauce","stock","coffee","tea","spaghetti"],
+ "Drinks":["water","juice","cola","lemonade","drink","squash","fizzy","pop","ale","beer","wine","cider","lager","soda","cordial","energy drink","tonic","prosecco"],
+ "Snacks":["crisp","crisps","chocolate","biscuit","sweet","snack","nut","popcorn","cracker","sharing bag"],
+ "Household":["washing powder","detergent","toilet roll","tissue","kitchen roll","cleaner","bleach","shampoo","soap","toothpaste","bin bag","foil","cling film","washing up liquid","dishwasher tablets"],
+ "Pet Food":["dog food","cat food","puppy food","kitten food","pet food","kibble","dog biscuits","cat biscuits","bird seed","rabbit food","hamster food","pet treats","chew sticks"],
+ "Baby Products":["nappy","nappies","diaper","diapers","baby wipes","baby food","baby formula","infant formula","teething"],
+ "Toiletries":["shampoo","conditioner","body wash","deodorant","toothpaste","toothbrush","shower gel","sanitary","razor","moisturiser"],
+ "Cleaning Products":["washing up liquid","dishwasher tablets","laundry detergent","fabric softener","surface cleaner","toilet cleaner","disinfectant","bleach","sponges"],
+ "Alcohol":["beer","ale","wine","cider","lager","prosecco","vodka","gin","whisky","rum"],
+ "Tea & Coffee":["tea bags","coffee","ground coffee","instant coffee","coffee beans","hot chocolate"],
+ "Health & Beauty":["vitamins","skincare","makeup","moisturiser","sun cream","sunscreen","face wash"]
+};
+function termMatches(text,term){
+ const escaped=term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+ return new RegExp("(^|[^a-z0-9])"+escaped.replace(/\s+/g,"\\s+")+"([^a-z0-9]|$)","i").test(text);
+}
+function inferCustomCategory(name){
+ const text=normalizeItemName(name);
+ let best=null,bestScore=0;
+ for(const cat of SHOP_CATEGORIES){
+  if(DEFAULT_SHOP_CATEGORIES.includes(cat))continue;
+  const label=normalizeItemName(cat);
+  const words=label.split(/[^a-z0-9]+/).filter(w=>w.length>2);
+  const concepts=CATEGORY_CONCEPTS[cat]||[];
+  const terms=PRODUCT_TERMS[cat]||[];
+  let score=0;
+  if(termMatches(text,label))score+=12;
+  for(const word of words)if(termMatches(text,word))score+=5;
+  for(const alias of concepts)if(termMatches(text,alias))score+=4;
+  for(const term of terms)if(termMatches(text,term))score+=3;
+  if(score>bestScore){bestScore=score;best=cat;}
+ }
+ return bestScore>=3?best:null;
+}
 function guessShoppingCategory(name){
  const normalized=normalizeItemName(name);
  const learned=learnedCategoryRules.find(x=>x.normalized_item_name===normalized);
  if(learned&&SHOP_CATEGORIES.includes(learned.category))return learned.category;
- const n=String(name||"").toLowerCase();
- const rules=[
-  ["Fruit & Veg",/\b(apple|banana|orange|grape|strawberr|blueberr|raspberr|lettuce|tomato|potato|carrot|onion|broccoli|cucumber|pepper|spinach|mushroom|avocado|salad|fruit|veg)\b/],
-  ["Meat & Fish",/\b(chicken|beef|pork|lamb|sausage|bacon|ham|mince|steak|turkey|fish|salmon|tuna|prawn|cod|haddock)\b/],
-  ["Dairy & Eggs",/\b(milk|cheese|yoghurt|yogurt|butter|cream|egg|custard)\b/],
-  ["Bakery",/\b(bread|roll|bun|bagel|croissant|wrap|pitta|pita|cake|muffin|pastry)\b/],
-  ["Frozen",/\b(frozen|ice cream|pizza|chips|nugget|waffle)\b/],
-  ["Tins & Dry Goods",/\b(pasta|rice|noodle|flour|sugar|cereal|oat|bean|lentil|tinned|tin|sauce|stock|coffee|tea)\b/],
-  ["Drinks",/\b(water|juice|cola|lemonade|drink|squash|fizzy|pop|ale|beer|wine|cider|lager|soda)\b/],
-  ["Snacks",/\b(crisp|crisps|chocolate|biscuit|sweet|snack|nut|popcorn)\b/],
-  ["Household",/\b(washing|detergent|toilet|tissue|kitchen roll|cleaner|bleach|shampoo|soap|toothpaste|bin bag|foil|cling film)\b/]
- ];
- const match=rules.find(x=>x[1].test(n))?.[0]||"Other";
- return SHOP_CATEGORIES.includes(match)?match:"Other";
+ const custom=inferCustomCategory(name);
+ if(custom)return custom;
+ const text=normalized;
+ const scores=new Map(SHOP_CATEGORIES.map(cat=>[cat,0]));
+ const add=(cat,terms,weight=2)=>{if(!SHOP_CATEGORIES.includes(cat))return;for(const term of terms)if(termMatches(text,term))scores.set(cat,scores.get(cat)+weight);};
+ add("Fruit & Veg",PRODUCT_TERMS["Fruit & Veg"],3);
+ add("Meat & Fish",PRODUCT_TERMS["Meat & Fish"],3);
+ add("Dairy & Eggs",PRODUCT_TERMS["Dairy & Eggs"],3);
+ add("Bakery",PRODUCT_TERMS["Bakery"],3);
+ add("Frozen",PRODUCT_TERMS["Frozen"],3);
+ add("Tins & Dry Goods",PRODUCT_TERMS["Tins & Dry Goods"],3);
+ add("Drinks",PRODUCT_TERMS["Drinks"],3);
+ add("Snacks",PRODUCT_TERMS["Snacks"],3);
+ add("Household",PRODUCT_TERMS["Household"],3);
+ // Product-specific phrases outrank broad ingredient words, e.g. chicken nuggets -> Frozen.
+ if(termMatches(text,"chicken nuggets")||termMatches(text,"fish fingers")||termMatches(text,"frozen chips"))scores.set("Frozen",(scores.get("Frozen")||0)+8);
+ if(termMatches(text,"dog biscuits")||termMatches(text,"cat biscuits"))scores.set("Pet Food",(scores.get("Pet Food")||0)+10);
+ const ranked=[...scores.entries()].filter(([cat,score])=>cat!=="Other"&&score>0).sort((a,b)=>b[1]-a[1]);
+ return ranked.length?ranked[0][0]:"Other";
 }
 async function categoryForNewItem(name){
  const normalized=normalizeItemName(name);
  const rule=learnedCategoryRules.find(x=>x.normalized_item_name===normalized);
- return rule?.category&&SHOP_CATEGORIES.includes(rule.category)?rule.category:guessShoppingCategory(name);
+ if(rule&&SHOP_CATEGORIES.includes(rule.category))return rule.category;
+ return guessShoppingCategory(name);
 }
 async function backfillItemCategories(){
  const uncategorised=state.items.filter(x=>!x.category);
@@ -989,7 +1053,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.13.3",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.14",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

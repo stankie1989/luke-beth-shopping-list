@@ -1,7 +1,9 @@
-# Luke & Beth's Shared Shopping List — v1.7.13.3
+# Luke & Beth's Shared Shopping List — v1.7.14
 
-Category picker visual consistency update, based on confirmed 1.7.13.2.
-- Adds the same subtle coloured left accent bar to each category choice in the Change Category popup.
-- Uses the same category accent palette as the main shopping list and Shopping Mode headings.
-- Keeps the selected category highlight and tick.
+Automatic smart category inference, built from confirmed 1.7.13.3.
+- Expands offline category matching with scored product terms and phrases.
+- Exact household learned corrections retain highest priority.
+- Automatically recognises custom categories using category-name concepts and built-in product knowledge (e.g. Pet Food, Baby Products, Toiletries, Cleaning Products).
+- Uses product-specific phrase weighting to reduce ambiguous classifications (e.g. chicken nuggets -> Frozen).
+- No manual keyword entry and no external AI/API call.
 - No SQL changes.
