@@ -693,3 +693,13 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .calendar-shift-finish>small{font-size:.62rem;letter-spacing:.09em;font-weight:800;color:var(--muted)}
 .calendar-shift-row .calendar-shift-finish-time{font-size:1.55rem;line-height:1.1;font-weight:850;color:var(--text);font-variant-numeric:tabular-nums}
 .calendar-shift-row .calendar-shift-hours{grid-column:1/-1;color:var(--muted);font-size:.76rem;font-weight:500;text-align:left}
+
+
+/* 1.7.18.2 colour-coded finish-time badges */
+.calendar-shift-finish{min-width:94px;padding:7px 11px;border:1px solid transparent;border-radius:13px}
+.calendar-shift-finish-green{background:rgba(69,198,154,.13);border-color:rgba(69,198,154,.28)}
+.calendar-shift-finish-green>small,.calendar-shift-row .calendar-shift-finish-green .calendar-shift-finish-time{color:#55d5a5}
+.calendar-shift-finish-amber{background:rgba(244,183,64,.13);border-color:rgba(244,183,64,.3)}
+.calendar-shift-finish-amber>small,.calendar-shift-row .calendar-shift-finish-amber .calendar-shift-finish-time{color:#f4b740}
+.calendar-shift-finish-red{background:rgba(240,107,112,.13);border-color:rgba(240,107,112,.3)}
+.calendar-shift-finish-red>small,.calendar-shift-row .calendar-shift-finish-red .calendar-shift-finish-time{color:#f47a80}
