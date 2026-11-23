@@ -1,3 +1,7 @@
+Luke & Beth Shared Shopping List — Version 1.7.18.6
+
+Dashboard update: kept the household dashboard date in its existing right-hand position and added a compact live 24-hour digital clock directly underneath. The clock refreshes every minute and follows the device's local time. No SQL changes required; built on 1.7.18.5.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.5
 
 Dashboard update: replaced duplicated shopping totals with a compact Dinner plan tile beside Still to buy. The dinner tile counts consecutive planned dinners from today and names the first day without a planned dinner. Built on 1.7.18.4; no SQL changes required.
