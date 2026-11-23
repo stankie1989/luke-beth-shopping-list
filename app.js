@@ -223,21 +223,27 @@ async function copySingleMealSubmit(e){
  const entry=pendingCopyMeal,target=$("#copyMealTarget").value;
  if(!target)return toast("Choose a destination date.");
  if(target===entry.entry_date)return toast("Choose a different date.");
- const collision=state.menuEntries.find(x=>x.entry_date===target&&x.meal_type===entry.meal_type);
+ const collisions=state.menuEntries.filter(x=>x.entry_date===target&&x.meal_type===entry.meal_type);
+ if(collisions.length>1)return toast("That destination already has multiple meals in the same slot. Remove the extras before swapping.");
+ const collision=collisions[0];
  if(collision){
-  const choice=await askSwapChoice("Meal already planned",`"${collision.name}" is already planned in this slot. Would you like to swap the two meals, or keep it and copy "${entry.name}" alongside?`);
-  if(choice==="cancel")return;
-  if(choice==="swap"){
-   const {error}=await db.from("menu_entries").update({entry_date:entry.entry_date}).eq("id",collision.id);
-   if(error)return toast("Couldn't swap the existing meal: "+error.message);
-   const {data,error:moveError}=await db.from("menu_entries").update({entry_date:target}).eq("id",entry.id).select("*").single();
-   if(moveError)return toast("The existing meal moved, but the copied meal couldn't be moved. Please refresh.");
+  const choice=await askSwapChoice("Meal already planned",`"${collision.name}" is already planned in this slot. Swap it with "${entry.name}"?`);
+  if(choice!=="swap")return;
+   const tempDate="9999-12-31";
+   const {data:tempRows,error:tempCheck}=await db.from("menu_entries").select("id").eq("household_id",state.householdId).eq("entry_date",tempDate);
+   if(tempCheck)return toast("Couldn't prepare the swap: "+tempCheck.message);
+   const stagingDate=tempRows?.length?"9999-12-30":tempDate;
+   const {error:stageError}=await db.from("menu_entries").update({entry_date:stagingDate}).eq("id",entry.id);
+   if(stageError)return toast("Couldn't start the swap: "+stageError.message);
+   const {error:moveError}=await db.from("menu_entries").update({entry_date:entry.entry_date}).eq("id",collision.id);
+   if(moveError){await db.from("menu_entries").update({entry_date:entry.entry_date}).eq("id",entry.id);return toast("Couldn't move the existing meal. The original was restored where possible.");}
+   const {data,error:finishError}=await db.from("menu_entries").update({entry_date:target}).eq("id",entry.id).select("*").single();
+   if(finishError)return toast("The swap is partly complete. Please refresh and check both days.");
    state.menuEntries=state.menuEntries.filter(x=>x.id!==collision.id&&x.id!==entry.id);
    state.menuEntries.push({...collision,entry_date:entry.entry_date},data);
    $("#copyMealDialog").close();pendingCopyMeal=null;
    await refreshMenuAfterCopy(target);toast("Meals swapped.");
    return;
-  }
  }
  const payload={household_id:state.householdId,entry_date:target,meal_type:entry.meal_type,name:entry.name,image_key:entry.image_key,ingredients:entry.ingredients||[],created_by:state.user.id};
  const {data,error}=await db.from("menu_entries").insert(payload).select("*").single();
@@ -275,16 +281,27 @@ async function copyWholeDay(e){
  if(!meals.length)return toast("There are no meals on the selected day.");
  const targetMeals=state.menuEntries.filter(x=>x.entry_date===target);
  if(targetMeals.length){
-  const choice=await askSwapChoice("Destination day isn't empty",`The destination already has ${targetMeals.length} planned meal(s). Would you like to swap the two days, or copy the meals alongside the existing ones?`);
-  if(choice==="cancel")return;
-  if(choice==="swap"){
+  const choice=await askSwapChoice("Destination day isn't empty",`The destination already has ${targetMeals.length} planned meal(s). Swap the two days?`);
+  if(choice!=="swap")return;
+   const sourceTypes=meals.map(x=>x.meal_type),targetTypes=targetMeals.map(x=>x.meal_type);
+   if(new Set(sourceTypes).size!==sourceTypes.length||new Set(targetTypes).size!==targetTypes.length){
+    return toast("One of these days already has duplicate meals in the same slot. Please remove the extra meal before swapping.");
+   }
+   let tempDate="9999-12-31";
+   const {data:tempRows,error:tempCheck}=await db.from("menu_entries").select("id").eq("household_id",state.householdId).eq("entry_date",tempDate);
+   if(tempCheck)return toast("Couldn't prepare the swap: "+tempCheck.message);
+   if(tempRows?.length)tempDate="9999-12-30";
    const idsSource=meals.map(x=>x.id),idsTarget=targetMeals.map(x=>x.id);
-   const {error:moveTargetError}=await db.from("menu_entries").update({entry_date:source}).in("id",idsTarget);
-   if(moveTargetError)return toast("Couldn't move the destination day's meals: "+moveTargetError.message);
-   const {error:moveSourceError}=await db.from("menu_entries").update({entry_date:target}).in("id",idsSource);
-   if(moveSourceError)return toast("Destination meals moved, but source meals couldn't be swapped. Please refresh.");
-   $("#copyDayDialog").close();state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();toast("Days swapped.");return;
-  }
+   const {error:stageError}=await db.from("menu_entries").update({entry_date:tempDate}).in("id",idsSource);
+   if(stageError)return toast("Couldn't start the day swap: "+stageError.message);
+   const {error:targetError}=await db.from("menu_entries").update({entry_date:source}).in("id",idsTarget);
+   if(targetError){
+    await db.from("menu_entries").update({entry_date:source}).in("id",idsSource);
+    return toast("Couldn't move the destination meals. The original day has been restored where possible.");
+   }
+   const {error:finishError}=await db.from("menu_entries").update({entry_date:target}).in("id",idsSource);
+   if(finishError)return toast("The swap is partly complete. Please refresh and check both days before trying again.");
+   $("#copyDayDialog").close();state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();toast("Days swapped successfully.");return;
  }
  const payload=meals.map(x=>({household_id:state.householdId,entry_date:target,meal_type:x.meal_type,name:x.name,image_key:x.image_key,ingredients:x.ingredients||[],created_by:state.user.id}));
  const {data,error}=await db.from("menu_entries").insert(payload).select("*");
@@ -387,12 +404,14 @@ async function confirmDatePicker(){
  $("#datePickerDialog").close();
  if(action==="favourite"){
   const f=state.pendingFavourite;if(!f)return;
+  if(await hasMealInSlot(date,type))return;
   const payload={household_id:state.householdId,entry_date:date,meal_type:type,name:f.name,image_key:f.image_key,ingredients:f.ingredients||[],created_by:state.user.id};
   const {data,error}=await db.from("menu_entries").insert(payload).select("*").single();
   if(error)return toast("Couldn't add favourite: "+error.message);
   state.menuEntries.push(data);renderMenu();toast("Favourite added to menu.");
  }else if(action==="reschedule"){
   const id=state.reschedulingMealId;const entry=state.missedMeals.find(x=>x.id===id);if(!entry)return;
+  if(await hasMealInSlot(date,type,id))return;
   const {data,error}=await db.from("menu_entries").update({entry_date:date,meal_type:type}).eq("id",id).select("*").single();
   if(error)return toast("Couldn't reschedule meal: "+error.message);
   state.missedMeals=state.missedMeals.filter(x=>x.id!==id);
@@ -460,6 +479,7 @@ function showFavouritePreview(f){
 }
 async function addPreviewedFavourite(){
  const f=state.previewingFavourite;if(!f)return;
+ if(await hasMealInSlot(state.pendingMealDate,state.pendingMealType))return;
  const payload={household_id:state.householdId,entry_date:state.pendingMealDate,meal_type:state.pendingMealType,name:f.name,image_key:f.image_key,ingredients:f.ingredients||[],created_by:state.user.id};
  const {data,error}=await db.from("menu_entries").insert(payload).select("*").single();
  if(error)return toast("Couldn't add favourite: "+error.message);
@@ -478,9 +498,18 @@ function openMealDialog(date,type,entry){
  $("#mealDialog").showModal();
 }
 function parseIngredients(raw){return raw.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{const m=line.match(/^(.*?)\s+x\s+(.+)$/i);return {name:(m?m[1]:line).trim(),quantity:m?m[2].trim():"1"};}).filter(x=>x.name);}
+async function hasMealInSlot(date,type,excludeId=null){
+ let query=db.from("menu_entries").select("id,name").eq("household_id",state.householdId).eq("entry_date",date).eq("meal_type",type);
+ if(excludeId)query=query.neq("id",excludeId);
+ const {data,error}=await query;
+ if(error){toast("Couldn't check this meal slot: "+error.message);return true;}
+ if(data?.length){toast(`There is already a ${type} planned for this day (${data[0].name}). Edit or swap it instead of adding another.`);return true;}
+ return false;
+}
 async function saveMeal(e){
  e.preventDefault();const name=$("#mealName").value.trim();if(!name)return;
  const date=$("#mealDialog").dataset.date,ingredients=parseIngredients($("#mealIngredients").value);
+ if(await hasMealInSlot(date,$("#mealType").value,state.editingMealId))return;
  const payload={household_id:state.householdId,entry_date:date,meal_type:$("#mealType").value,name:name.slice(0,90),image_key:state.selectedMealImage,ingredients,created_by:state.user.id};
  let result;
  if(state.editingMealId)result=await db.from("menu_entries").update(payload).eq("id",state.editingMealId).select("*").single();
@@ -757,7 +786,7 @@ function wire(){
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
- $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#cancelCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#copyMealForm").onsubmit=copySingleMealSubmit;$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#copyAlongsideButton").onclick=()=>finishSwapChoice("copy");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#copyAlongsideButton").onclick=()=>finishSwapChoice("copy");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
+ $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#cancelCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#copyMealForm").onsubmit=copySingleMealSubmit;$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
  $("#menuFavourites").onclick=showFavourites;$("#openMealFinder").onclick=openMealFinder;$("#closeMealFinder").onclick=()=>$("#mealFinderDialog").close();$("#findMealsButton").onclick=findMealsFromIngredients;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
@@ -794,7 +823,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.10.3",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.10.4",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
