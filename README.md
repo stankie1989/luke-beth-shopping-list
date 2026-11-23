@@ -1,10 +1,8 @@
-# Luke & Beth's Shared Shopping List — v1.7.12
+# Luke & Beth's Shared Shopping List — v1.7.12.1
 
-UI refinement and update-check reliability, based on confirmed working 1.7.11.
-- Styled in-app Edit Item dialog replaces browser prompt.
-- Styled in-app Delete Item confirmation replaces browser confirm.
-- Shopping list row layout keeps category selector and delete control on one line.
-- Category dropdown arrow is visible and has sufficient right padding.
-- Strengthened service-worker update checks: immediate, focus, page show, online, visibility and every 60 seconds.
-- Bumped service-worker cache to v54 and registration URL to v1.7.12.
+Shopping list row refinement based on v1.7.12.
+- Replaces the always-visible category dropdown with a compact arrow button.
+- Tapping the arrow opens a styled in-app category picker with all shared categories.
+- Frees horizontal space for shopping item names; keeps quantity, category arrow and delete control in one row.
+- Preserves existing category values and manual category changes.
 - No SQL changes.

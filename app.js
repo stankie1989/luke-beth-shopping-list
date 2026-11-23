@@ -87,6 +87,21 @@ async function confirmDeleteShoppingItem(){
  const {error}=await db.from("shopping_items").delete().eq("id",item.id);
  if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else{toast("Item deleted.");await refreshListStatus();}
 }
+let categoryEditingItem=null;
+function openItemCategoryPicker(item){
+ categoryEditingItem=item;
+ $("#itemCategoryDescription").textContent=`Choose a category for ${item.name}.`;
+ const host=$("#itemCategoryChoices");host.innerHTML="";
+ SHOP_CATEGORIES.forEach(cat=>{
+  const button=document.createElement("button");button.type="button";button.className="item-category-choice";
+  if((item.category||guessShoppingCategory(item.name))===cat)button.classList.add("selected");
+  const label=document.createElement("span");label.textContent=cat;
+  const tick=document.createElement("span");tick.className="category-choice-tick";tick.textContent=(item.category||guessShoppingCategory(item.name))===cat?"✓":"";
+  button.append(label,tick);button.onclick=async()=>{await setItemCategory(item,cat);closeItemCategoryPicker();};host.append(button);
+ });
+ $("#itemCategoryDialog").showModal();
+}
+function closeItemCategoryPicker(){categoryEditingItem=null;$("#itemCategoryDialog").close();}
 function buildItemRow(item,shopping=false){
  const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"")+(shopping?" shopping-mode-item":"");
  const c=document.createElement("input");c.type="checkbox";c.className=shopping?"shopping-mode-check":"check";c.checked=!!item.is_bought;c.setAttribute("aria-label",`Mark ${item.name} as ${item.is_bought?"not bought":"bought"}`);c.addEventListener("change",()=>update(item,{is_bought:c.checked}));
@@ -95,7 +110,7 @@ function buildItemRow(item,shopping=false){
   const addedAt=item.created_at?new Date(item.created_at).getTime():0;const isNew=Number.isFinite(addedAt)&&addedAt>0&&(Date.now()-addedAt)<2*60*60*1000;n.classList.toggle("is-new",isNew);n.setAttribute("aria-label",isNew?`${item.name}, newly added`:item.name);n.title=isNew?"Added in the last 2 hours · Tap to edit":"Tap to edit item name";
   n.addEventListener("click",()=>openEditItem(item));
   const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.type="button";m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const plus=document.createElement("button");plus.type="button";plus.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});plus.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,plus);
-  const category=document.createElement("select");category.className="item-category-select";category.setAttribute("aria-label",`Category for ${item.name}`);SHOP_CATEGORIES.forEach(cat=>{const option=document.createElement("option");option.value=cat;option.textContent=cat;option.selected=(item.category||guessShoppingCategory(item.name))===cat;category.append(option);});category.onchange=()=>setItemCategory(item,category.value);
+  const category=document.createElement("button");category.type="button";category.className="item-category-trigger";category.textContent="⌄";category.setAttribute("aria-label",`Change category for ${item.name}`);category.title=`Category: ${item.category||guessShoppingCategory(item.name)} · Tap to change`;category.onclick=()=>openItemCategoryPicker(item);
   const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>openDeleteItem(item);row.append(c,n,q,category,del);
  }else{const q=document.createElement("span");q.className="shopping-mode-quantity";q.textContent=item.quantity>1?`×${item.quantity}`:"";row.append(c,n,q);}
  return row;
@@ -873,7 +888,7 @@ function wire(){
  $("#settingsDialog").addEventListener("click",e=>{if(e.target===$("#settingsDialog"))$("#settingsDialog").close();});$("#shareDialog").addEventListener("click",e=>{if(e.target===$("#shareDialog"))$("#shareDialog").close();});
  $("#copyInviteCode").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");try{await navigator.clipboard.writeText(code);$("#inviteStatus").textContent="Invitation code copied.";toast("Invite code copied.");}catch(e){$("#inviteStatus").textContent="Please copy the code manually."; }};
  $("#shareInvite").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");const text=`Join my Luke & Beth shopping list! Open https://stankie1989.github.io/luke-beth-shopping-list/ and enter this invitation code: ${code}`;if(navigator.share){try{await navigator.share({title:"Luke & Beth’s Shopping List",text});}catch(e){if(e.name!=="AbortError")toast("Couldn't open sharing.");}}else{try{await navigator.clipboard.writeText(text);toast("Invitation copied — paste it into a message to Beth.");}catch(e){$("#inviteStatus").textContent=text;}}};
- $("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
+ $("#closeItemCategory").onclick=closeItemCategoryPicker;$("#cancelItemCategory").onclick=closeItemCategoryPicker;$("#itemCategoryDialog").addEventListener("cancel",()=>{categoryEditingItem=null;});$("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
  $("#closeDeleteItem").onclick=closeDeleteItem;$("#cancelDeleteItem").onclick=closeDeleteItem;$("#confirmDeleteItem").onclick=confirmDeleteShoppingItem;$("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};$("#showShoppingCategories").onchange=e=>{state.showShoppingCategories=e.target.checked;localStorage.setItem(CATEGORY_KEY,String(state.showShoppingCategories));renderItems();};
  $("#moreSignOut").onclick=signOut;
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
@@ -894,7 +909,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.12",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.12.1",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
