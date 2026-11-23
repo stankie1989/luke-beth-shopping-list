@@ -1,4 +1,4 @@
-# Luke & Beth's Shared Shopping List — v1.7.14
+# Luke & Beth's Shared Shopping List — v1.7.15
 
 Automatic smart category inference, built from confirmed 1.7.13.3.
 - Expands offline category matching with scored product terms and phrases.
@@ -7,3 +7,11 @@ Automatic smart category inference, built from confirmed 1.7.13.3.
 - Uses product-specific phrase weighting to reduce ambiguous classifications (e.g. chicken nuggets -> Frozen).
 - No manual keyword entry and no external AI/API call.
 - No SQL changes.
+
+
+## v1.7.15 – Smart Meal Finder
+- Favourite meal matches appear first, followed by online recipe ideas from TheMealDB.
+- Recipe cards compare available and missing ingredients, show full ingredients and instructions, and can add missing items to a chosen shopping list.
+- Online recipes can be saved to household favourites.
+- Quick links search BBC Good Food and Slimming World-style recipes using the ingredients entered.
+- No database migration or SQL required.

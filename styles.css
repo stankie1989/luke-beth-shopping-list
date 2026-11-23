@@ -519,3 +519,19 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 /* 1.7.13.3: match category picker tiles to Shopping Mode accent bars */
 .item-category-choice{border-left:4px solid var(--category-accent);padding-left:12px;border-radius:12px;position:relative}
 .item-category-choice.selected{border-top-color:var(--border);border-right-color:var(--border);border-bottom-color:var(--border);border-left-color:var(--category-accent);background:var(--surface2)}
+
+
+/* 1.7.15 Smart Meal Finder */
+.meal-finder-section-title{font-size:1rem;margin:18px 0 2px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.meal-finder-photo{width:58px;height:58px;object-fit:cover;border-radius:12px;flex:none;background:var(--surface)}
+.meal-finder-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.meal-finder-actions button{margin:0;flex:1 1 130px}
+.meal-finder-bbc-link{display:block;padding:12px 2px;color:var(--accent);font-weight:650;text-decoration:none}
+.meal-recipe-dialog{width:min(94vw,560px);max-height:88vh;overflow:auto}
+.meal-recipe-content h3{font-size:1.2rem;margin:8px 0 12px}
+.meal-recipe-content h4{margin:18px 0 8px}
+.meal-recipe-image{width:100%;max-height:230px;object-fit:cover;border-radius:14px}
+.meal-recipe-content ul{padding-left:22px;line-height:1.6}
+.meal-recipe-method{white-space:pre-line;line-height:1.6;color:var(--text)}
+.meal-recipe-source{font-size:.8rem;color:var(--muted)}
+.meal-recipe-link{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--surface);color:var(--accent);font-weight:650;text-decoration:none}

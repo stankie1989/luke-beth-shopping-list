@@ -590,35 +590,44 @@ async function showFavourites(){await loadFavouriteCategories();await loadMenuFa
 
 
 function mealFinderNormalise(value){return normaliseMealText(String(value||"")).replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
-function findMealsFromIngredients(){
- const raw=$("#mealFinderInput").value;
- const have=raw.split(/[,;\n]+/).map(x=>mealFinderNormalise(x)).filter(Boolean);
- const host=$("#mealFinderResults");host.innerHTML="";
- if(!have.length){host.textContent="Enter at least one ingredient to search.";return;}
- const results=(state.menuFavourites||[]).map(f=>{
-  const ingredients=(f.ingredients||[]).map(x=>({...x,_key:mealFinderNormalise(x.name)})).filter(x=>x._key);
-  const matched=ingredients.filter(ing=>have.some(h=>ing._key===h||ing._key.includes(h)||h.includes(ing._key)));
-  const missing=ingredients.filter(ing=>!matched.includes(ing));
-  const score=ingredients.length?matched.length/ingredients.length:0;
-  return {f,matched,missing,score};
- }).filter(x=>x.matched.length>0).sort((a,b)=>b.score-a.score||b.matched.length-a.matched.length);
- if(!results.length){host.textContent="No saved favourites matched those ingredients. Try different wording or add more ingredients.";return;}
- results.forEach(result=>{
-  const card=document.createElement("article");card.className="meal-finder-card";
-  const head=document.createElement("div");head.className="meal-finder-card-head";
-  const art=document.createElement("span");art.className="meal-finder-art";setMealArt(art,result.f.image_key);
-  const title=document.createElement("strong");title.textContent=result.f.name;
-  const score=document.createElement("small");score.textContent=`${result.matched.length} of ${(result.f.ingredients||[]).length} ingredients available`;
-  const titleWrap=document.createElement("div");titleWrap.className="meal-finder-title";titleWrap.append(title,score);head.append(art,titleWrap);card.append(head);
-  const haveLine=document.createElement("p");haveLine.className="meal-finder-have";haveLine.textContent="You have: "+result.matched.map(x=>x.name).join(", ");card.append(haveLine);
-  const missingLine=document.createElement("p");missingLine.className="meal-finder-missing";missingLine.textContent=result.missing.length?"You'll need: "+result.missing.map(x=>x.name).join(", "):"You've got everything for this meal!";card.append(missingLine);
-  if(result.missing.length){
-   const add=document.createElement("button");add.type="button";add.className="secondary-button compact";add.textContent="Add missing ingredients to shopping list";
-   add.onclick=()=>addMealIngredients({...result.f,ingredients:result.missing.map(({name,quantity})=>({name,quantity}))});
-   card.append(add);
-  }
-  host.append(card);
- });
+function mealFinderIngredients(){return $('#mealFinderInput').value.split(/[,;\n]+/).map(x=>mealFinderNormalise(x)).filter(Boolean);}
+function mealIngredientMatch(recipeIngredient,have){const key=mealFinderNormalise(recipeIngredient);return have.some(h=>key===h||key.includes(h)||h.includes(key)||key.split(' ').some(w=>w.length>3&&h.split(' ').includes(w)));}
+function mealFinderCard({name,image,source,matched,missing,onView,onAdd,onSave}){
+ const card=document.createElement('article');card.className='meal-finder-card';
+ const head=document.createElement('div');head.className='meal-finder-card-head';
+ const art=document.createElement('img');art.className='meal-finder-photo';art.alt='';art.loading='lazy';art.src=image||'./icon-192.png';
+ const titleWrap=document.createElement('div');titleWrap.className='meal-finder-title';const title=document.createElement('strong');title.textContent=name;const score=document.createElement('small');score.textContent=`${matched.length} of ${matched.length+missing.length} ingredients available · ${source}`;titleWrap.append(title,score);head.append(art,titleWrap);card.append(head);
+ const haveLine=document.createElement('p');haveLine.className='meal-finder-have';haveLine.textContent='You have: '+(matched.length?matched.join(', '):'None of the listed ingredients');card.append(haveLine);
+ const missingLine=document.createElement('p');missingLine.className='meal-finder-missing';missingLine.textContent=missing.length?"You'll need: "+missing.join(', '):"You've got everything for this meal!";card.append(missingLine);
+ const actions=document.createElement('div');actions.className='meal-finder-actions';const view=document.createElement('button');view.type='button';view.className='secondary-button compact';view.textContent='View recipe';view.onclick=onView;actions.append(view);
+ if(missing.length){const add=document.createElement('button');add.type='button';add.className='secondary-button compact';add.textContent='Add missing to list';add.onclick=onAdd;actions.append(add);}
+ if(onSave){const save=document.createElement('button');save.type='button';save.className='secondary-button compact';save.textContent='Save as favourite';save.onclick=onSave;actions.append(save);}card.append(actions);return card;
+}
+function showMealRecipe(recipe,source){
+ const host=$('#mealRecipeContent');host.innerHTML='';const title=document.createElement('h3');title.textContent=recipe.name;host.append(title);
+ if(recipe.image){const img=document.createElement('img');img.className='meal-recipe-image';img.src=recipe.image;img.alt=recipe.name;host.append(img);}
+ const ingredients=document.createElement('h4');ingredients.textContent='Ingredients';host.append(ingredients);const ul=document.createElement('ul');(recipe.ingredients||[]).forEach(x=>{const li=document.createElement('li');li.textContent=[x.quantity,x.name].filter(Boolean).join(' ');ul.append(li);});host.append(ul);
+ const instructions=document.createElement('h4');instructions.textContent='Method';host.append(instructions);const method=document.createElement('p');method.className='meal-recipe-method';method.textContent=recipe.instructions||'No cooking instructions were supplied for this recipe.';host.append(method);
+ const sourceLine=document.createElement('p');sourceLine.className='meal-recipe-source';sourceLine.textContent='Recipe source: '+source+' · Recipe data provided by TheMealDB';host.append(sourceLine);const credit=document.createElement('a');credit.href='https://www.themealdb.com/';credit.target='_blank';credit.rel='noopener';credit.textContent='TheMealDB';credit.className='meal-recipe-link';host.append(credit);
+ if(recipe.url){const link=document.createElement('a');link.href=recipe.url;link.target='_blank';link.rel='noopener';link.textContent='Open original recipe';link.className='meal-recipe-link';host.append(link);}
+ $('#mealRecipeDialog').showModal();
+}
+async function saveFinderFavourite(recipe){const {error}=await db.from('menu_favourites').upsert({household_id:state.householdId,name:recipe.name,image_key:'dinner',ingredients:recipe.ingredients,created_by:state.user.id},{onConflict:'household_id,name'});if(error)return toast("Couldn't save favourite: "+error.message);await loadMenuFavourites();toast('Saved to favourite meals.');}
+async function findMealsFromIngredients(){
+ const have=mealFinderIngredients();const host=$('#mealFinderResults');host.innerHTML='';if(!have.length){host.textContent='Enter ingredients you have at home, separated by commas.';return;}
+ const heading=document.createElement('h3');heading.className='meal-finder-section-title';heading.textContent='Your favourite meals';host.append(heading);
+ const favResults=(state.menuFavourites||[]).map(f=>{const ingredients=(f.ingredients||[]).map(x=>({...x,_key:mealFinderNormalise(x.name)})).filter(x=>x._key);const matched=ingredients.filter(x=>mealIngredientMatch(x.name,have));const missing=ingredients.filter(x=>!matched.includes(x));return {f,ingredients,matched,missing,score:ingredients.length?matched.length/ingredients.length:0};}).filter(x=>x.matched.length>0).sort((a,b)=>b.score-a.score||b.matched.length-a.matched.length);
+ if(!favResults.length){const empty=document.createElement('p');empty.className='list-picker-intro';empty.textContent='No saved favourites match those ingredients yet.';host.append(empty);}else favResults.forEach(r=>{const recipe={name:r.f.name,image:null,ingredients:r.ingredients.map(x=>({name:x.name,quantity:x.quantity||''})),instructions:''};host.append(mealFinderCard({name:r.f.name,image:'',source:'Your favourites',matched:r.matched.map(x=>x.name),missing:r.missing.map(x=>x.name),onView:()=>showMealRecipe(recipe,'Your saved favourite'),onAdd:()=>addMealIngredients({...recipe,ingredients:r.missing.map(x=>({name:x.name,quantity:x.quantity||'1'}))})}));});
+ const onlineHeading=document.createElement('h3');onlineHeading.className='meal-finder-section-title';onlineHeading.textContent='More meal ideas';host.append(onlineHeading);const loading=document.createElement('p');loading.textContent='Searching recipe ideas…';host.append(loading);
+ try{
+  const api='https://www.themealdb.com/api/json/v1/1';const searchTerms=have.slice(0,3);const lists=await Promise.all(searchTerms.map(async term=>{const res=await fetch(`${api}/filter.php?i=${encodeURIComponent(term.replace(/\s+/g,'_'))}`);if(!res.ok)throw new Error('Recipe search unavailable');const data=await res.json();return data.meals||[];}));
+  const ids=[...new Set(lists.flat().map(x=>x.idMeal))].slice(0,10);const details=await Promise.all(ids.map(async id=>{const res=await fetch(`${api}/lookup.php?i=${encodeURIComponent(id)}`);if(!res.ok)return null;const data=await res.json();return data.meals?.[0]||null;}));
+  const recipes=details.filter(Boolean).map(m=>{const ingredients=[];for(let i=1;i<=20;i++){const name=(m[`strIngredient${i}`]||'').trim();if(name)ingredients.push({name,quantity:(m[`strMeasure${i}`]||'').trim()});}const matched=ingredients.filter(x=>mealIngredientMatch(x.name,have));const missing=ingredients.filter(x=>!matched.includes(x));return {id:m.idMeal,name:m.strMeal,image:m.strMealThumb,ingredients,matched,missing,instructions:m.strInstructions||'',url:m.strSource||m.strYoutube||''};}).filter(x=>x.matched.length>0).sort((a,b)=>(b.matched.length/Math.max(1,b.ingredients.length))-(a.matched.length/Math.max(1,a.ingredients.length))||b.matched.length-a.matched.length);
+  loading.remove();if(!recipes.length){const none=document.createElement('p');none.className='list-picker-intro';none.textContent='No online recipes matched those ingredients. Try adding a main ingredient such as chicken, potato or pasta.';host.append(none);}
+  recipes.slice(0,8).forEach(r=>host.append(mealFinderCard({name:r.name,image:r.image,source:'TheMealDB',matched:r.matched.map(x=>x.name),missing:r.missing.map(x=>x.name),onView:()=>showMealRecipe(r,'TheMealDB'),onAdd:()=>addMealIngredients({...r,ingredients:r.missing.map(x=>({name:x.name,quantity:x.quantity||'1'}))}),onSave:()=>saveFinderFavourite(r)})));
+ }catch(error){loading.textContent='Online recipe search is temporarily unavailable. Your saved favourite matches are still shown.';console.warn('Meal finder online search failed',error);}
+ const bbc=document.createElement('a');bbc.className='meal-finder-bbc-link';bbc.href=`https://www.bbcgoodfood.com/search?q=${encodeURIComponent(have.join(' '))}`;bbc.target='_blank';bbc.rel='noopener';bbc.textContent='Find more ideas on BBC Good Food ↗';host.append(bbc);
+ const sw=document.createElement('a');sw.className='meal-finder-bbc-link';sw.href=`https://www.google.com/search?q=${encodeURIComponent('Slimming World recipes '+have.join(' '))}`;sw.target='_blank';sw.rel='noopener';sw.textContent='Search for Slimming World-style recipes ↗';host.append(sw);
 }
 async function openMealFinder(){
  await loadMenuFavourites();
@@ -1010,7 +1019,7 @@ function wire(){
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#cancelCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#copyMealForm").onsubmit=copySingleMealSubmit;$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
- $("#menuFavourites").onclick=showFavourites;$("#openMealFinder").onclick=openMealFinder;$("#closeMealFinder").onclick=()=>$("#mealFinderDialog").close();$("#findMealsButton").onclick=findMealsFromIngredients;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
+ $("#closeMealRecipe").onclick=()=>$("#mealRecipeDialog").close();$("#menuFavourites").onclick=showFavourites;$("#openMealFinder").onclick=openMealFinder;$("#closeMealFinder").onclick=()=>$("#mealFinderDialog").close();$("#findMealsButton").onclick=findMealsFromIngredients;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
  $("#closeMealIconPicker").onclick=()=>$("#mealIconPickerDialog").close();
