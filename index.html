@@ -121,7 +121,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.10</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.10.1</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -223,6 +223,19 @@
     <div class="dialog-actions"><button type="button" id="cancelDatePicker" class="secondary-button">Cancel</button><button type="button" id="confirmDatePicker" class="primary-button">Continue</button></div>
   </dialog>
   
+
+<dialog id="copyDayDialog" class="app-dialog copy-day-dialog">
+  <div class="dialog-heading"><div><span class="section-icon">📋</span><h2>Copy a day</h2></div><button type="button" class="dialog-close" id="closeCopyDay">×</button></div>
+  <p class="more-description">Copy all planned meals from one day to another. Your original meals will stay where they are.</p>
+  <form id="copyDayForm" class="copy-day-form">
+    <label for="copyDaySource">Copy meals from</label>
+    <select id="copyDaySource" required></select>
+    <label for="copyDayTarget">Copy meals to</label>
+    <input id="copyDayTarget" type="text" inputmode="numeric" placeholder="DD-MM-YYYY" maxlength="10" required>
+    <small class="copy-day-hint">Enter the destination date as DD-MM-YYYY, for example 04-12-2026.</small>
+    <div class="copy-day-actions"><button type="button" class="secondary-button" id="cancelCopyDay">Cancel</button><button type="submit" class="primary-button">Copy meals</button></div>
+  </form>
+</dialog>
 <dialog id="mealFinderDialog" class="app-dialog">
   <div class="dialog-heading"><div><span class="section-icon">🍳</span><h2>What can I cook?</h2></div><button type="button" class="dialog-close" id="closeMealFinder">×</button></div>
   <p class="more-description">Enter ingredients you have at home, separated by commas. We'll look through your favourite meals.</p>
@@ -258,6 +271,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.10"></script>
+  <script src="./app.js?v=1.7.10.1"></script>
 </body>
 </html>

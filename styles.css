@@ -427,3 +427,13 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .menu-calendar-tools label{font-size:.85rem;color:var(--muted)}
 .menu-calendar-tools input{min-width:130px;flex:1;padding:9px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:inherit}
 .meal-copy-button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 9px;font-size:.78rem}
+
+/* 1.7.10.1 styled copy-day dialog */
+.copy-day-dialog{width:min(92vw,460px)}
+.copy-day-form{display:grid;gap:10px;margin-top:14px}
+.copy-day-form label{font-weight:650;font-size:.92rem}
+.copy-day-form select,.copy-day-form input{width:100%;box-sizing:border-box;min-height:48px;padding:12px 14px;border:1px solid var(--border);border-radius:13px;background:var(--surface);color:var(--text);font:inherit}
+.copy-day-form input{letter-spacing:.04em}
+.copy-day-hint{color:var(--muted);font-size:.8rem;line-height:1.4}
+.copy-day-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+.copy-day-actions button{min-width:112px}
