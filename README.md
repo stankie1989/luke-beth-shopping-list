@@ -1,3 +1,7 @@
+Luke & Beth Shared Shopping List — Version 1.7.18
+
+Update: added a Plymouth city-centre weather card to the Household Dashboard. It selects Beth's next upcoming timed shift from the connected read-only Google Calendar and shows the hourly forecast closest to her finishing time: temperature, feels-like temperature, precipitation probability, wind speed and conditions. Includes a manual refresh control and Open-Meteo attribution. Weather is retrieved from Open-Meteo's public forecast API; no API key, SQL migration or additional Google permission is required. Forecast availability depends on the provider's forecast horizon.
+
 Luke & Beth Shared Shopping List — Version 1.7.16.1
 
 Dashboard refinement, built from 1.7.16:

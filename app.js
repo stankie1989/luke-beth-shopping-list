@@ -3,7 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_kSby2ywwkDb8qGy4gGPQbg_DcXaO3xF";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=s=>document.querySelector(s);
 let waitingWorker=null;
-const state={calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -879,7 +879,59 @@ async function loadCalendarShifts(force=false){
   if(String(error.message).includes("404"))state.calendar.error="Google Calendar hasn't been connected yet.";
   else state.calendar.error=error.message;
  }
- finally{state.calendar.loading=false;renderCalendarShifts();}
+ finally{state.calendar.loading=false;renderCalendarShifts();state.weather.loaded=false;loadWeather(true);}
+}
+const PLYMOUTH_WEATHER={latitude:50.3755,longitude:-4.1427,name:"Plymouth city centre"};
+function weatherDescription(code){
+ const map={0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Depositing rime fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",56:"Freezing drizzle",57:"Heavy freezing drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",67:"Heavy freezing rain",71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",80:"Light showers",81:"Showers",82:"Heavy showers",85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm with hail",99:"Thunderstorm with heavy hail"};
+ return map[code]||"Forecast unavailable";
+}
+function weatherEmoji(code){if(code===0)return "☀️";if([1,2].includes(code))return "🌤️";if(code===3)return "☁️";if([45,48].includes(code))return "🌫️";if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code))return "🌧️";if([71,73,75,77,85,86].includes(code))return "🌨️";if([95,96,99].includes(code))return "⛈️";return "🌦️";}
+function nextShiftForWeather(){
+ const now=Date.now();
+ return state.calendar.shifts.filter(x=>x.end&&x.end.includes("T")&&new Date(x.end).getTime()>=now).sort((a,b)=>new Date(a.end)-new Date(b.end))[0]||null;
+}
+function renderWeather(){
+ const status=$("#weatherStatus"),host=$("#weatherForecast"),button=$("#refreshWeatherButton");if(!status||!host||!button)return;
+ host.innerHTML="";button.disabled=state.weather.loading;
+ if(state.weather.loading){status.textContent="Checking the forecast for Beth's finish time…";return;}
+ if(!state.calendar.connected){status.textContent="Connect Google Calendar to see the forecast at Beth's next finish time.";return;}
+ if(state.weather.error){status.textContent=state.weather.error;return;}
+ if(!state.weather.data){status.textContent="Weather will appear for Beth's next upcoming shift.";return;}
+ const w=state.weather.data;
+ status.textContent=`${w.shiftLabel} · ${w.finishLabel} · ${PLYMOUTH_WEATHER.name}`;
+ const main=document.createElement("div");main.className="weather-main";
+ const icon=document.createElement("span");icon.className="weather-icon";icon.textContent=weatherEmoji(w.code);
+ const summary=document.createElement("div");summary.className="weather-summary";
+ const temp=document.createElement("strong");temp.className="weather-temperature";temp.textContent=`${Math.round(w.temperature)}°C`;
+ const desc=document.createElement("span");desc.textContent=weatherDescription(w.code);
+ summary.append(temp,desc);main.append(icon,summary);host.append(main);
+ const details=document.createElement("div");details.className="weather-details";
+ [["Feels like",`${Math.round(w.apparent)}°C`],["Chance of rain",w.rain===null?"—":`${Math.round(w.rain)}%`],["Wind",`${Math.round(w.wind)} mph`]].forEach(([label,value])=>{const item=document.createElement("div");item.className="weather-detail";const l=document.createElement("span");l.textContent=label;const v=document.createElement("strong");v.textContent=value;item.append(l,v);details.append(item);});
+ host.append(details);
+}
+async function loadWeather(force=false){
+ if(state.weather.loading||(!force&&state.weather.loaded))return;
+ if(!state.calendar.connected){state.weather.loaded=true;renderWeather();return;}
+ const shift=nextShiftForWeather();
+ if(!shift){state.weather.loaded=true;state.weather.error="No upcoming timed shift found to forecast yet.";renderWeather();return;}
+ const finish=new Date(shift.end);if(Number.isNaN(finish.getTime()))return;
+ state.weather.loading=true;state.weather.error=null;renderWeather();
+ try{
+  const params=new URLSearchParams({latitude:String(PLYMOUTH_WEATHER.latitude),longitude:String(PLYMOUTH_WEATHER.longitude),hourly:"temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m",wind_speed_unit:"mph",temperature_unit:"celsius",timezone:"Europe/London",forecast_days:"16"});
+  const response=await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  if(!response.ok)throw new Error(`Weather service returned ${response.status}.`);
+  const result=await response.json();const times=result.hourly?.time||[];
+  if(!times.length)throw new Error("The weather forecast is temporarily unavailable.");
+  let best=-1,bestDiff=Infinity;
+  times.forEach((t,i)=>{const diff=Math.abs(new Date(t).getTime()-finish.getTime());if(diff<bestDiff){bestDiff=diff;best=i;}});
+  if(best<0||bestDiff>90*60*1000)throw new Error("The forecast for this shift is not available yet. Try again nearer the date.");
+  const get=(key)=>result.hourly?.[key]?.[best];
+  const start=new Date(shift.start);
+  state.weather.data={temperature:get("temperature_2m"),apparent:get("apparent_temperature"),rain:get("precipitation_probability"),code:get("weather_code"),wind:get("wind_speed_10m"),shiftLabel:start.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"short"}),finishLabel:finish.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})};
+  state.weather.shiftId=shift.id;state.weather.loaded=true;
+ }catch(error){state.weather.error=error.message||"Couldn't load the weather forecast.";state.weather.loaded=true;}
+ finally{state.weather.loading=false;renderWeather();}
 }
 function handleCalendarReturn(){
  const params=new URLSearchParams(location.search),result=params.get("calendar");
@@ -1098,7 +1150,7 @@ function updateAuthMode(){
  $("#authPassword").autocomplete=signingUp?"new-password":"current-password";
 }
 function wire(){
- $("#connectCalendarButton").onclick=connectGoogleCalendar;$("#refreshCalendarButton").onclick=()=>loadCalendarShifts(true);
+ $("#connectCalendarButton").onclick=connectGoogleCalendar;$("#refreshCalendarButton").onclick=()=>loadCalendarShifts(true);$("#refreshWeatherButton").onclick=()=>loadWeather(true);
  $("#applyUpdate").onclick=()=>{if(waitingWorker){waitingWorker.postMessage({type:"SKIP_WAITING"});$("#applyUpdate").disabled=true;$("#applyUpdate").textContent="Updating…";}};
  $("#dismissUpdate").onclick=()=>$("#updateBanner").hidden=true;
  $("#authForm").onsubmit=auth;updateAuthMode();
@@ -1160,14 +1212,14 @@ function wire(){
   $(".list-panel").classList.toggle("hidden",tab!=="list");
   $(".people-strip").classList.toggle("hidden",tab==="more");
   if(tab==="history")refreshActivity();
-  if(tab==="dashboard"){renderDashboard();if(state.menuEntries.length===0)loadMenu();loadCalendarShifts();}
+  if(tab==="dashboard"){renderDashboard();if(state.menuEntries.length===0)loadMenu();loadCalendarShifts();renderWeather();}
   if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
  });
 }
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.17",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.18",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
