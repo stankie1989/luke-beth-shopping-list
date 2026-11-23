@@ -515,3 +515,7 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .shopping-mode .shopping-category-heading,
 #shoppingModeItems .shopping-category-heading,
 .shopping-category-heading{border-left:4px solid var(--category-accent);padding-left:13px;background:transparent;border-top:0;border-right:0;border-bottom:0;border-radius:0 8px 8px 0;color:var(--text)}
+
+/* 1.7.13.3: match category picker tiles to Shopping Mode accent bars */
+.item-category-choice{border-left:4px solid var(--category-accent);padding-left:12px;border-radius:12px;position:relative}
+.item-category-choice.selected{border-top-color:var(--border);border-right-color:var(--border);border-bottom-color:var(--border);border-left-color:var(--category-accent);background:var(--surface2)}

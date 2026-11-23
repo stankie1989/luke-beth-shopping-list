@@ -1,8 +1,7 @@
-# Luke & Beth's Shared Shopping List — v1.7.13.2
+# Luke & Beth's Shared Shopping List — v1.7.13.3
 
-Shopping Mode category heading styling, based on confirmed 1.7.13.1.
-- Applies Option 2: a subtle coloured left border to each category heading.
-- Uses the same category accent colour palette as the main shopping list category markers.
-- Keeps the existing dark theme, typography and spacing restrained.
-- Applies to category headings in both grouped list render surfaces.
+Category picker visual consistency update, based on confirmed 1.7.13.2.
+- Adds the same subtle coloured left accent bar to each category choice in the Change Category popup.
+- Uses the same category accent palette as the main shopping list and Shopping Mode headings.
+- Keeps the selected category highlight and tick.
 - No SQL changes.
