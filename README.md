@@ -1,10 +1,10 @@
-# Luke & Beth's Shared Shopping List — v1.7.11
+# Luke & Beth's Shared Shopping List — v1.7.12
 
-Smart Shopping Categories, built from confirmed working 1.7.10.4.
-- Automatically guesses a supermarket category when a shopping item is added.
-- Existing uncategorised items are assigned a suggested category when the list loads.
-- Users can manually change an item's category.
-- More tab includes a Show categories toggle, stored per device.
-- When enabled, main list and Shopping Mode group items by category.
-- When disabled, the list returns to the original ungrouped layout.
-- Requires one Supabase migration adding nullable category column to shopping_items.
+UI refinement and update-check reliability, based on confirmed working 1.7.11.
+- Styled in-app Edit Item dialog replaces browser prompt.
+- Styled in-app Delete Item confirmation replaces browser confirm.
+- Shopping list row layout keeps category selector and delete control on one line.
+- Category dropdown arrow is visible and has sufficient right padding.
+- Strengthened service-worker update checks: immediate, focus, page show, online, visibility and every 60 seconds.
+- Bumped service-worker cache to v54 and registration URL to v1.7.12.
+- No SQL changes.

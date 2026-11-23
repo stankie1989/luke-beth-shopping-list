@@ -67,16 +67,36 @@ async function createList(){const name=prompt("Name your new list:");if(name===n
 async function changeListVisibility(list){const next=!list.is_shared;const promptText=next?`Make “${list.name}” shared? Your partner will immediately see its existing items.`:`Make “${list.name}” private? Your partner will no longer be able to see it.`;if(!confirm(promptText))return;const {data,error}=await db.from("shopping_lists").update({is_shared:next}).eq("id",list.id).select("*").single();if(error)return toast("Couldn't change visibility: "+error.message);Object.assign(list,data);renderListControls();if(state.currentListId===list.id)await refreshCurrentList();toast(next?"List is now shared.":"List is now private.");}
 async function renameList(list){const name=prompt("Rename list:",list.name);if(name===null)return;const clean=name.trim();if(!clean)return toast("List name can't be empty.");const {data,error}=await db.from("shopping_lists").update({name:clean.slice(0,40)}).eq("id",list.id).select("*").single();if(error)return toast("Couldn't rename list: "+error.message);Object.assign(list,data);renderListControls();toast("List renamed.");}
 async function deleteList(list){if(state.lists.length<2)return toast("You need to keep at least one list.");if(!confirm(`Delete “${list.name}” and all its items? This cannot be undone.`))return;const {error}=await db.from("shopping_lists").delete().eq("id",list.id);if(error)return toast("Couldn't delete list: "+error.message);state.lists=state.lists.filter(x=>x.id!==list.id);if(state.currentListId===list.id)state.currentListId=state.lists[0].id;localStorage.setItem(`lb-current-list-${state.householdId}`,state.currentListId);renderListControls();await refreshCurrentList();toast("List deleted.");}
+let editingShoppingItem=null,deletingShoppingItem=null;
+function openEditItem(item){
+ editingShoppingItem=item;$("#editItemName").value=item.name;$("#editItemDialog").showModal();$("#editItemName").focus();
+}
+function closeEditItem(){editingShoppingItem=null;$("#editItemDialog").close();}
+async function saveEditedItem(e){
+ e.preventDefault();const item=editingShoppingItem;if(!item)return;
+ const name=$("#editItemName").value.trim();if(!name)return toast("Item name can't be empty.");
+ if(name===item.name){closeEditItem();return;}
+ if(state.items.some(x=>x.id!==item.id&&x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");
+ const ok=await update(item,{name:name.slice(0,80)});if(ok)closeEditItem();
+}
+function openDeleteItem(item){deletingShoppingItem=item;$("#deleteItemMessage").textContent=`Are you sure you want to delete “${item.name}” from this shopping list?`;$("#deleteItemDialog").showModal();}
+function closeDeleteItem(){deletingShoppingItem=null;$("#deleteItemDialog").close();}
+async function confirmDeleteShoppingItem(){
+ const item=deletingShoppingItem;if(!item)return;
+ const previous=[...state.items];state.items=state.items.filter(x=>x.id!==item.id);renderItems();closeDeleteItem();
+ const {error}=await db.from("shopping_items").delete().eq("id",item.id);
+ if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else{toast("Item deleted.");await refreshListStatus();}
+}
 function buildItemRow(item,shopping=false){
  const row=document.createElement("div");row.className="item"+(item.is_bought?" done":"")+(shopping?" shopping-mode-item":"");
  const c=document.createElement("input");c.type="checkbox";c.className=shopping?"shopping-mode-check":"check";c.checked=!!item.is_bought;c.setAttribute("aria-label",`Mark ${item.name} as ${item.is_bought?"not bought":"bought"}`);c.addEventListener("change",()=>update(item,{is_bought:c.checked}));
  const n=document.createElement(shopping?"span":"button");if(!shopping)n.type="button";n.className=shopping?"shopping-mode-item-name":"item-name";n.textContent=item.name;
  if(!shopping){
   const addedAt=item.created_at?new Date(item.created_at).getTime():0;const isNew=Number.isFinite(addedAt)&&addedAt>0&&(Date.now()-addedAt)<2*60*60*1000;n.classList.toggle("is-new",isNew);n.setAttribute("aria-label",isNew?`${item.name}, newly added`:item.name);n.title=isNew?"Added in the last 2 hours · Tap to edit":"Tap to edit item name";
-  n.addEventListener("click",async()=>{const value=prompt("Edit item name:",item.name);if(value===null)return;const name=value.trim();if(!name)return toast("Item name can't be empty.");if(name===item.name)return;await update(item,{name:name.slice(0,80)});});
+  n.addEventListener("click",()=>openEditItem(item));
   const q=document.createElement("div");q.className="qty";const m=document.createElement("button");m.type="button";m.textContent="−";m.disabled=item.quantity<=1;const count=document.createElement("strong");count.textContent=item.quantity;const plus=document.createElement("button");plus.type="button";plus.textContent="+";m.onclick=()=>update(item,{quantity:Math.max(1,item.quantity-1)});plus.onclick=()=>update(item,{quantity:Math.min(99,item.quantity+1)});q.append(m,count,plus);
   const category=document.createElement("select");category.className="item-category-select";category.setAttribute("aria-label",`Category for ${item.name}`);SHOP_CATEGORIES.forEach(cat=>{const option=document.createElement("option");option.value=cat;option.textContent=cat;option.selected=(item.category||guessShoppingCategory(item.name))===cat;category.append(option);});category.onchange=()=>setItemCategory(item,category.value);
-  const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>removeItem(item);row.append(c,n,q,category,del);
+  const del=document.createElement("button");del.type="button";del.className="delete-item";del.textContent="×";del.setAttribute("aria-label",`Delete ${item.name}`);del.title=`Delete ${item.name}`;del.onclick=()=>openDeleteItem(item);row.append(c,n,q,category,del);
  }else{const q=document.createElement("span");q.className="shopping-mode-quantity";q.textContent=item.quantity>1?`×${item.quantity}`:"";row.append(c,n,q);}
  return row;
 }
@@ -680,12 +700,7 @@ async function update(item,patch){
  if(error){Object.assign(item,previous);renderItems();toast("Couldn't save: "+error.message);return false;}
  Object.assign(item,data);renderItems();await refreshListStatus();return true;
 }
-async function removeItem(item){
- if(!confirm(`Delete “${item.name}” from the list?`))return;
- const previous=[...state.items];state.items=state.items.filter(x=>x.id!==item.id);renderItems();
- const {error}=await db.from("shopping_items").delete().eq("id",item.id);
- if(error){state.items=previous;renderItems();toast("Couldn't delete: "+error.message);}else{toast("Item deleted.");await refreshListStatus();}
-}
+
 function activityDescription(a){
  const d=a.details&&typeof a.details==="object"?a.details:{};
  const item=`"${a.item_name||d.new_name||d.old_name||"an item"}"`;
@@ -858,7 +873,8 @@ function wire(){
  $("#settingsDialog").addEventListener("click",e=>{if(e.target===$("#settingsDialog"))$("#settingsDialog").close();});$("#shareDialog").addEventListener("click",e=>{if(e.target===$("#shareDialog"))$("#shareDialog").close();});
  $("#copyInviteCode").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");try{await navigator.clipboard.writeText(code);$("#inviteStatus").textContent="Invitation code copied.";toast("Invite code copied.");}catch(e){$("#inviteStatus").textContent="Please copy the code manually."; }};
  $("#shareInvite").onclick=async()=>{const code=state.household?.invite_code;if(!code)return toast("Invite code isn't available yet.");const text=`Join my Luke & Beth shopping list! Open https://stankie1989.github.io/luke-beth-shopping-list/ and enter this invitation code: ${code}`;if(navigator.share){try{await navigator.share({title:"Luke & Beth’s Shopping List",text});}catch(e){if(e.name!=="AbortError")toast("Couldn't open sharing.");}}else{try{await navigator.clipboard.writeText(text);toast("Invitation copied — paste it into a message to Beth.");}catch(e){$("#inviteStatus").textContent=text;}}};
- $("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};$("#showShoppingCategories").onchange=e=>{state.showShoppingCategories=e.target.checked;localStorage.setItem(CATEGORY_KEY,String(state.showShoppingCategories));renderItems();};
+ $("#editItemForm").onsubmit=saveEditedItem;$("#closeEditItem").onclick=closeEditItem;$("#cancelEditItem").onclick=closeEditItem;
+ $("#closeDeleteItem").onclick=closeDeleteItem;$("#cancelDeleteItem").onclick=closeDeleteItem;$("#confirmDeleteItem").onclick=confirmDeleteShoppingItem;$("#moreThemeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};$("#showShoppingCategories").onchange=e=>{state.showShoppingCategories=e.target.checked;localStorage.setItem(CATEGORY_KEY,String(state.showShoppingCategories));renderItems();};
  $("#moreSignOut").onclick=signOut;
  document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{
   const tab=b.dataset.tab;
@@ -878,7 +894,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.11",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.12",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
@@ -888,12 +904,14 @@ async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wir
      if(installing.state==="installed"&&navigator.serviceWorker.controller)showUpdate(installing);
     });
    });
-   const checkForAppUpdate=()=>reg.update().then(inspectRegistration).catch(()=>{});
+   const checkForAppUpdate=()=>reg.update().then(()=>{inspectRegistration();}).catch(error=>console.warn("App update check failed",error));
+   inspectRegistration();
    checkForAppUpdate();
    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkForAppUpdate();});
+   window.addEventListener("focus",checkForAppUpdate);
    window.addEventListener("pageshow",checkForAppUpdate);
    window.addEventListener("online",checkForAppUpdate);
-   window.setInterval(checkForAppUpdate,5*60*1000);
+   window.setInterval(checkForAppUpdate,60*1000);
   }).catch(error=>console.warn("App update check failed",error));
  }
 }

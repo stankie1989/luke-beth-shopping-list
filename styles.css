@@ -467,3 +467,17 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .item-category-select{max-width:118px;min-width:0;padding:6px 4px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--muted);font-size:.72rem}
 .item{gap:8px}
 @media(max-width:420px){.item-category-select{max-width:88px;font-size:.66rem}.item-name{min-width:50px}}
+
+/* 1.7.12 compact shopping row layout */
+.item{grid-template-columns:22px minmax(0,1fr) auto minmax(92px,108px) 24px;gap:6px;min-width:0}
+.item-name{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.item-category-select{width:100%;max-width:none;min-width:0;box-sizing:border-box;appearance:none;-webkit-appearance:none;padding:7px 22px 7px 7px;font-size:.7rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2396a2bf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center}
+.delete-item{width:24px;min-width:24px;height:32px;display:flex;align-items:center;justify-content:center;padding:0}
+.item-action-dialog{width:min(92vw,440px);max-width:440px}
+.item-action-dialog form{display:grid;gap:10px}
+.item-action-dialog label{font-weight:650}
+.item-action-dialog input{width:100%;box-sizing:border-box;min-height:50px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font:inherit}
+.item-action-dialog .dialog-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.item-action-dialog .dialog-actions button{min-height:46px}
+.danger-button{border:0;border-radius:12px;padding:10px 16px;background:#c83d58;color:white;font-weight:750}
+@media(max-width:380px){.item{grid-template-columns:20px minmax(0,1fr) auto minmax(82px,92px) 22px;gap:4px}.qty{gap:4px}.qty button{width:25px;height:27px}.item-category-select{font-size:.64rem;padding-left:5px;padding-right:19px}}

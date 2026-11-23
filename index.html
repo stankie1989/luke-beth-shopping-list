@@ -121,7 +121,7 @@
           <button id="shareInvite" class="primary-button" type="button">Share invitation</button><p id="inviteStatus" class="more-description" role="status"></p></section>
         <section class="more-section"><h3>Shopping list</h3><p class="more-description">Choose how your shopping items are displayed.</p><label class="category-toggle-row" for="showShoppingCategories"><span><strong>Show categories</strong><small>Group items into supermarket sections</small></span><input id="showShoppingCategories" type="checkbox"></label></section><section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.11</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.7.12</p>
       </section>
 
       <section id="approvalCard" class="approval-card hidden" aria-live="polite">
@@ -141,7 +141,20 @@
     </nav>
   </div>
 
-  <dialog id="settingsDialog" class="modal">
+  <dialog id="editItemDialog" class="app-dialog item-action-dialog">
+  <div class="dialog-heading"><div><span class="section-icon">✏️</span><h2>Edit item</h2></div><button type="button" class="dialog-close" id="closeEditItem">×</button></div>
+  <form id="editItemForm">
+    <label for="editItemName">Item name</label>
+    <input id="editItemName" type="text" maxlength="80" required>
+    <div class="dialog-actions"><button type="button" class="secondary-button" id="cancelEditItem">Cancel</button><button type="submit" class="primary-button">Save changes</button></div>
+  </form>
+</dialog>
+<dialog id="deleteItemDialog" class="app-dialog item-action-dialog">
+  <div class="dialog-heading"><div><span class="section-icon">🗑️</span><h2>Delete item?</h2></div><button type="button" class="dialog-close" id="closeDeleteItem">×</button></div>
+  <p id="deleteItemMessage" class="more-description"></p>
+  <div class="dialog-actions"><button type="button" class="secondary-button" id="cancelDeleteItem">Keep item</button><button type="button" class="danger-button" id="confirmDeleteItem">Delete item</button></div>
+</dialog>
+<dialog id="settingsDialog" class="modal">
     <form method="dialog" class="modal-card">
       <div class="modal-title"><h2>Personal settings</h2><button class="icon-button close" aria-label="Close">×</button></div>
       <p id="accountLabel" class="modal-note">Signed in</p>
@@ -290,6 +303,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.7.11"></script>
+  <script src="./app.js?v=1.7.12"></script>
 </body>
 </html>
