@@ -192,6 +192,40 @@ function suggestedMealKeys(value){
 }
 function rememberMealIcon(key){state.recentMealIcons=[key,...state.recentMealIcons.filter(x=>x!==key)].slice(0,8);localStorage.setItem("lb-recent-meal-icons",JSON.stringify(state.recentMealIcons));}
 
+
+function promptTargetDate(message){
+ const value=prompt(message+" Enter destination date (YYYY-MM-DD):");
+ if(value===null)return null;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(new Date(value+"T12:00:00").getTime())){toast("Please enter a valid date in YYYY-MM-DD format.");return null;}
+ return value;
+}
+async function copySingleMeal(entry){
+ const target=promptTargetDate(`Copy "${entry.name}" to which date?`);
+ if(!target)return;
+ const exists=state.menuEntries.some(x=>x.entry_date===target&&x.meal_type===entry.meal_type);
+ if(exists&&!confirm("There is already a meal in that slot. Copy anyway?"))return;
+ const payload={household_id:state.householdId,entry_date:target,meal_type:entry.meal_type,name:entry.name,image_key:entry.image_key,ingredients:entry.ingredients||[],created_by:state.user.id};
+ const {data,error}=await db.from("menu_entries").insert(payload).select("*").single();
+ if(error)return toast("Couldn't copy meal: "+error.message);
+ const start=new Date(`${state.menuStart}T12:00:00`),end=new Date(start);end.setDate(end.getDate()+13);
+ if(target<localISO(start)||target>localISO(end)){state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();}
+ else{state.menuEntries.push(data);renderMenu();}
+ toast("Meal copied to "+dateLabel(target)+".");
+}
+async function copyWholeDay(){
+ const source=prompt("Which day would you like to copy? Enter date (YYYY-MM-DD):");
+ if(!source)return;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(source))return toast("Please enter the date as YYYY-MM-DD.");
+ const meals=state.menuEntries.filter(x=>x.entry_date===source);
+ if(!meals.length)return toast("There are no planned meals on that date in the currently loaded fortnight.");
+ const target=prompt("Copy that day's meals to which date? Enter date (YYYY-MM-DD):");
+ if(!target)return;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(target))return toast("Please enter the date as YYYY-MM-DD.");
+ const payload=meals.map(x=>({household_id:state.householdId,entry_date:target,meal_type:x.meal_type,name:x.name,image_key:x.image_key,ingredients:x.ingredients||[],created_by:state.user.id}));
+ const {data,error}=await db.from("menu_entries").insert(payload).select("*");
+ if(error)return toast("Couldn't copy day: "+error.message);
+ state.menuStart=localISO(mondayOf(new Date(target+"T12:00:00")));await loadMenu();toast(`${data.length} meals copied to ${dateLabel(target)}.`);
+}
 function renderMenu(){
  const host=$("#menuWeeks");if(!host)return;host.innerHTML="";
  if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));
@@ -216,7 +250,7 @@ function renderMenu(){
      const im=mealImage(slot.entry.image_key);const thumb=document.createElement("button");thumb.type="button";thumb.className="meal-thumb";setMealArt(thumb,slot.entry.image_key);thumb.title="Edit meal";thumb.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
      const info=document.createElement("button");info.type="button";info.className="meal-info";info.innerHTML=`<small>${slot.label}</small><strong></strong>`;info.querySelector("strong").textContent=slot.entry.name;info.onclick=()=>openMealDialog(iso,slot.type,slot.entry);
      const add=document.createElement("button");add.type="button";add.className="meal-add-ingredients";add.textContent="＋ List";add.title="Add ingredients to shopping list";add.onclick=()=>addMealIngredients(slot.entry);
-     row.append(tick,thumb,info,add);
+     const copy=document.createElement("button");copy.type="button";copy.className="meal-copy-button";copy.textContent="Copy";copy.title="Copy this meal to another day";copy.onclick=()=>copySingleMeal(slot.entry);row.append(tick,thumb,info,add,copy);
     }else{
      const add=document.createElement("button");add.type="button";add.className="menu-add-slot";add.textContent=`＋ Add ${slot.label.toLowerCase()}`;add.onclick=()=>openMealSourcePicker(iso,slot.type);row.append(add);
     }
@@ -657,7 +691,7 @@ function wire(){
  $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
- $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};
+ $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
  $("#menuFavourites").onclick=showFavourites;$("#openMealFinder").onclick=openMealFinder;$("#closeMealFinder").onclick=()=>$("#mealFinderDialog").close();$("#findMealsButton").onclick=findMealsFromIngredients;$("#manageFavouriteCategories").onclick=manageFavouriteCategories;$("#addCategorySubmit").onclick=saveManagedCategory;$("#closeManageCategories").onclick=()=>$("#manageCategoriesDialog").close();$("#favouriteSearch").addEventListener("input",renderFavouritesList);$("#favouriteCategoryFilter").addEventListener("change",renderFavouritesList);$("#closeMealSource").onclick=()=>$("#mealSourceDialog").close();$("#cancelMealSource").onclick=()=>$("#mealSourceDialog").close();$("#closeDayFavourites").onclick=()=>$("#dayFavouritesDialog").close();$("#closeFavouritePreview").onclick=()=>$("#favouritePreviewDialog").close();$("#backToDayFavourites").onclick=()=>{$("#favouritePreviewDialog").close();showFavouritePicker(state.pendingMealDate,state.pendingMealType);};$("#addPreviewedFavourite").onclick=addPreviewedFavourite;
  $("#mealForm").onsubmit=saveMeal;
  $("#openMealIconPicker").onclick=openMealIconPicker;
@@ -694,7 +728,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();setInterval(()=>{if(state.items.length)renderItems();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.9",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.10",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

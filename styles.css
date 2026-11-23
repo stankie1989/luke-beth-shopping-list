@@ -421,3 +421,9 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
 .meal-finder-card p{margin:10px 0 0;line-height:1.4}
 .meal-finder-card .meal-finder-missing{color:var(--text)}
 .meal-finder-card button{margin-top:12px;white-space:normal}
+
+/* 1.7.10 calendar tools */
+.menu-calendar-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.menu-calendar-tools label{font-size:.85rem;color:var(--muted)}
+.menu-calendar-tools input{min-width:130px;flex:1;padding:9px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:inherit}
+.meal-copy-button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 9px;font-size:.78rem}
