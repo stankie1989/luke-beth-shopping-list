@@ -759,3 +759,12 @@ main > .list-status-card + .share-button{
 
 /* v1.7.18.9: tighten the shopping tab spacing above the household member strip */
 .app-shell.shopping-tab-active .people-strip{margin-top:18px}
+
+/* v1.7.19.1 – custom create-list dialog and persistent selected-list icon */
+.create-list-dialog{width:min(440px,calc(100% - 30px))}
+.create-list-dialog .list-picker-intro{margin:0 0 12px;line-height:1.5}
+.create-list-dialog form{display:block}
+.create-list-dialog label{margin-top:15px}
+.create-list-dialog .dialog-actions{margin-top:22px}
+.active-list-icon{width:38px;height:42px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface2);font-size:19px}
+.list-switcher select{flex:1;min-width:0}
