@@ -741,3 +741,17 @@ dialog.app-dialog .secondary-button{border:1px solid var(--line);background:var(
   .dashboard-date{font-size:.72rem}
   .dashboard-clock{font-size:.9rem;padding:3px 7px;min-width:66px}
 }
+
+
+/* v1.7.18.8: keep incoming likes prominent at the top; move list status below the items */
+.approval-top{
+ position:relative;
+ z-index:2;
+ margin:12px 20px 14px;
+}
+main > .list-panel + .list-status-card{
+ margin:14px 0 10px;
+}
+main > .list-status-card + .share-button{
+ margin-top:9px;
+}

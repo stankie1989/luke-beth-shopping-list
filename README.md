@@ -1,3 +1,6 @@
+Luke & Beth Shared Shopping List — Version 1.7.18.8
+Shopping screen update: incoming like/approval prompt remains at the top of the screen; the Changes made or green up-to-date status card now appears below the shopping list, directly above Share with Beth. No SQL changes required. Built on 1.7.18.7.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.7
 Dashboard refinement: aligned the date and compact digital clock horizontally with the Household dashboard heading, reducing vertical space while retaining the date above the live 24-hour clock. Built on 1.7.18.6; no SQL changes required.
 
