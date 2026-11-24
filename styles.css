@@ -755,3 +755,7 @@ main > .list-panel + .list-status-card{
 main > .list-status-card + .share-button{
  margin-top:9px;
 }
+
+
+/* v1.7.18.9: tighten the shopping tab spacing above the household member strip */
+.app-shell.shopping-tab-active .people-strip{margin-top:-8px}

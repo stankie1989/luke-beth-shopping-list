@@ -1,3 +1,6 @@
+Luke & Beth Shared Shopping List — Version 1.7.18.9
+Shopping tab spacing refinement: tightened the gap above the Luke & Beth household member strip to bring it into line with the Dashboard. Added shopping-tab-active styling. Built on 1.7.18.8; no SQL changes required.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.8
 Shopping screen update: incoming like/approval prompt remains at the top of the screen; the Changes made or green up-to-date status card now appears below the shopping list, directly above Share with Beth. No SQL changes required. Built on 1.7.18.7.
 
