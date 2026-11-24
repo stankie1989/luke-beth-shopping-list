@@ -768,3 +768,22 @@ main > .list-status-card + .share-button{
 .create-list-dialog .dialog-actions{margin-top:22px}
 .active-list-icon{width:38px;height:42px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface2);font-size:19px}
 .list-switcher select{flex:1;min-width:0}
+
+
+/* v1.7.19.2 – simple name-and-chevron list switcher */
+.list-switcher{display:flex;gap:7px;align-items:center;margin:12px 0 4px;min-width:0}
+.list-switcher-button{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:1;min-width:0;min-height:48px;padding:10px 13px;border:1px solid var(--line);border-radius:13px;background:var(--surface2);color:var(--text);font:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
+.list-switcher-button:active{border-color:var(--blue);background:color-mix(in srgb,var(--surface2) 82%,var(--blue))}
+.list-switcher-button #activeListName{min-width:0;overflow-wrap:anywhere}
+.list-switcher-chevron{flex:none;color:var(--muted);font-size:21px;line-height:1}
+.switch-lists-dialog{width:min(440px,calc(100% - 28px))}
+.switch-lists-options{display:grid;gap:9px;margin:4px 0 16px}
+.switch-list-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface2);color:var(--text);text-align:left;cursor:pointer}
+.switch-list-option.selected{border-color:var(--blue);background:color-mix(in srgb,var(--surface2) 84%,var(--blue))}
+.switch-list-copy{display:grid;gap:4px;min-width:0}
+.switch-list-copy strong{font-size:14px;overflow-wrap:anywhere}
+.switch-list-copy small{font-size:11px;color:var(--muted)}
+.switch-list-check{flex:none;width:25px;height:25px;display:grid;place-items:center;border-radius:50%;color:#fff;background:var(--accent);font-size:14px;font-weight:800}
+.switch-list-option:not(.selected) .switch-list-check{background:transparent;border:1px solid var(--line)}
+.switcher-create-list{width:100%}
+@media(max-width:380px){.list-switcher{gap:5px}.list-switcher-button{padding-left:10px;padding-right:10px;font-size:13px}.list-switcher .compact{padding-left:8px;padding-right:8px}}
