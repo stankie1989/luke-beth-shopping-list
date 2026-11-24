@@ -1,3 +1,6 @@
+Luke & Beth Shared Shopping List — Version 1.7.18.10
+Shopping tab spacing correction: set the top margin above the household member strip to 18px, matching the Dashboard spacing. Corrects the previous 1.7.18.9 adjustment. No SQL changes.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.9
 Shopping tab spacing refinement: tightened the gap above the Luke & Beth household member strip to bring it into line with the Dashboard. Added shopping-tab-active styling. Built on 1.7.18.8; no SQL changes required.
 
