@@ -789,18 +789,27 @@ main > .list-status-card + .share-button{
 @media(max-width:380px){.list-switcher{gap:5px}.list-switcher-button{padding-left:10px;padding-right:10px;font-size:13px}.list-switcher .compact{padding-left:8px;padding-right:8px}}
 
 
-/* v1.7.19.4: replace blurred oval header decoration with a clean flowing gradient wave */
+/* v1.7.19.5: layered, smooth gradient waves with crisp curved highlights */
 .wave{
-  height:76px!important;
+  height:82px!important;
   position:relative!important;
   margin:8px -20px 2px!important;
   overflow:hidden!important;
   z-index:1!important;
-  background:linear-gradient(180deg,transparent 0%,rgba(10,17,43,.18) 100%);
+  background:linear-gradient(180deg,transparent 0%,rgba(10,17,43,.12) 100%);
 }
 .wave span{display:none!important}
-.wave-art{display:block;width:100%;height:100%;position:absolute;inset:0;overflow:visible}
-.wave-fill{fill:url(#waveFill);opacity:.24}
-.wave-edge{fill:none;stroke:url(#waveEdge);stroke-width:2.2;vector-effect:non-scaling-stroke;opacity:.92}
+.wave-art{display:block;width:100%;height:100%;position:absolute;inset:0;overflow:hidden}
+.wave-layer{stroke:none}
+.wave-layer-back{fill:url(#waveBack);opacity:.42}
+.wave-layer-mid{fill:url(#waveMid);opacity:.48}
+.wave-layer-front{fill:url(#waveFront);opacity:.34}
+.wave-edge{fill:none;stroke:url(#waveHighlight);vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.wave-edge-back{stroke-width:1.5;opacity:.52}
+.wave-edge-front{stroke-width:2;opacity:.88}
 :root[data-theme="light"] .wave{background:linear-gradient(180deg,transparent,rgba(94,111,220,.05))}
-:root[data-theme="light"] .wave-fill{opacity:.18}
+:root[data-theme="light"] .wave-layer-back,:root[data-theme="light"] .wave-layer-mid,:root[data-theme="light"] .wave-layer-front{opacity:.2}
+:root[data-theme="light"] .wave-edge{opacity:.65}
+/* Keep the household strip's first-load spacing identical to later tab returns. */
+.app-shell.shopping-tab-active .people-strip{margin-top:18px}
+.approval-top{margin:12px 0 14px;}

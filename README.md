@@ -102,3 +102,11 @@ Automatic smart category inference, built from confirmed 1.7.13.3.
 - Added More settings for Beth pickup badge colour cutoffs.
 - Defaults remain green before 16:00, amber through 18:00, red after 18:00.
 - Preferences are saved locally on each device; no database or SQL changes.
+
+
+## Version 1.7.19.5
+- Rebuilt the header decoration as three smooth overlapping blue-to-purple wave layers with crisp gradient highlights, matching the approved layered mock-up more closely.
+- Applied the shopping-tab member-strip spacing immediately when the app opens, preventing the first-load spacing jump.
+- Moved the incoming shared-list approval prompt below the household member strip so it no longer appears above or pushes that strip down.
+- Preserved all existing app features and household Google Calendar integration. No SQL or Edge Function changes.
+- Service-worker cache advanced to v85.
