@@ -852,3 +852,19 @@ main > .list-status-card + .share-button{
 }
 .wave.wave-glow-line + #topMealFinderSlot{position:relative;z-index:2}
 :root[data-theme="light"] .wave.wave-glow-line{background:transparent!important}
+
+
+/* v1.7.20.0: compact household list-sharing status beneath live connection */
+.people-strip{gap:8px}
+.live-status-stack{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;min-width:0}
+.live-status{justify-content:flex-end;white-space:nowrap}
+.compact-list-status{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-height:13px;font-size:9px;line-height:1.15;color:var(--muted);white-space:nowrap}
+.compact-list-status i{width:11px;height:11px;flex:none;display:grid;place-items:center;border:1.4px solid currentColor;border-radius:50%;font-style:normal;font-size:7px;font-weight:900;line-height:1}
+.compact-list-status.status-liked{color:#35d99b}
+.compact-list-status.status-changed{color:#f2ad45}
+.compact-list-status.status-awaiting{color:#b895ff}
+.compact-list-status.status-neutral{color:#8ca9d7}
+.compact-list-status.status-syncing{color:#27c8ff}
+/* Keep the detailed status card in the DOM for existing share-state logic, but use the compact member-strip indicator visually. */
+#listStatusCard{display:none!important}
+@media(max-width:390px){.live-status{font-size:10px;gap:5px}.compact-list-status{font-size:8px}.people-strip{padding-left:10px;padding-right:10px}.people{gap:5px}.person{padding-right:7px}}

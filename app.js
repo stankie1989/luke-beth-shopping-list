@@ -1106,12 +1106,19 @@ async function refreshListStatus(){
  }
  renderListStatus();
 }
+function updateCompactListStatus(kind,symbol,title){
+ const indicator=$("#compactListStatus"),icon=$("#compactStatusIcon"),label=$("#compactStatusText");
+ if(!indicator||!icon||!label)return;
+ indicator.className="compact-list-status status-"+kind;
+ icon.textContent=symbol;label.textContent=title;
+ const shared=!!currentList()?.is_shared;indicator.classList.toggle("hidden",!shared);
+}
 function renderListStatus(){
  const card=$("#listStatusCard"),approval=$("#approvalCard");if(!card||!approval)return;
  const version=state.listStatus?.list_version??1,share=state.latestShare,partner=state.partner;
  card.className="list-status-card";approval.classList.add("hidden");
  const shareButton=$("#shareButton"),shareHint=$("#shareHint");
- if(currentList()&&!currentList().is_shared){card.classList.add("hidden");if(shareButton)shareButton.classList.remove("hidden");if(shareHint)shareHint.classList.remove("hidden");return;}
+ if(currentList()&&!currentList().is_shared){card.classList.add("hidden");updateCompactListStatus("neutral","•","Private list");if(shareButton)shareButton.classList.remove("hidden");if(shareHint)shareHint.classList.remove("hidden");return;}
  const allItemsBought=state.items.every(item=>item.is_bought);
  if(shareButton)shareButton.classList.toggle("hidden",allItemsBought);
  if(shareHint)shareHint.classList.toggle("hidden",allItemsBought);
@@ -1126,6 +1133,10 @@ function renderListStatus(){
    if(!state.approvalDismissed){approval.classList.remove("hidden");$("#approvalTitle").textContent=`${state.members.find(m=>m.user_id===share.sender_id)?.display_name||"Your partner"} shared the list`;$("#approvalText").textContent="Review the changes and like to confirm.";}
   }else{kind="status-awaiting";symbol="◷";title=`Shared with ${state.partner?.display_name||"your partner"}`;text=`Waiting for ${state.partner?.display_name||"them"} to review and like the list.`;}
  }
+ const compactKind=kind==="liked"?"liked":kind==="changed"?"changed":kind==="awaiting"?"awaiting":"neutral";
+ const compactSymbol=kind==="liked"?"✓":kind==="changed"?"↻":kind==="awaiting"?"!":"↗";
+ const compactTitle=kind==="liked"?(allItemsBought?"All done":"All up to date"):kind==="changed"?"Changes made":kind==="awaiting"?(share?.recipient_id===state.user?.id?"Review shared list":"Waiting for review"):"Ready to share";
+ updateCompactListStatus(compactKind,compactSymbol,compactTitle);
  card.classList.add(kind);$("#statusSymbol").textContent=symbol;$("#statusTitle").textContent=title;$("#statusText").textContent=text;applyListStatusTheme();
  $("#shareLabel").textContent="Share with "+(partner?.display_name||"your partner");
  $("#shareHint").textContent=kind==="status-liked"?"The latest list has been approved by both of you.":kind==="status-awaiting"?"Your partner will see a prompt to review and like the list.":"Changes sync automatically. Share when you're ready for approval.";
