@@ -826,3 +826,26 @@ main > .list-status-card + .share-button{
 .wave-highlight-blue{stroke:url(#waveBlueEdge);stroke-width:1.8;opacity:.95}
 .wave-highlight-violet{stroke:url(#wavePurpleEdge);stroke-width:1.7;opacity:.88}
 :root[data-theme="light"] .wave{background:linear-gradient(180deg,transparent,rgba(94,111,220,.05))}
+
+
+/* v1.7.19.8: compact neon glow-line header accent (Option 4) */
+.wave.wave-glow-line{
+  height:44px!important;
+  margin:8px -20px 2px!important;
+  position:relative!important;
+  overflow:hidden!important;
+  z-index:1!important;
+  background:linear-gradient(180deg,rgba(12,24,58,.02) 0%,rgba(8,14,35,.18) 100%)!important;
+}
+.wave.wave-glow-line .wave-art{display:none!important}
+.wave.wave-glow-line::before{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:linear-gradient(90deg,#16d8ff 0%,#087cff 35%,#573cff 68%,#e02cff 100%);
+  box-shadow:0 0 7px rgba(20,190,255,.75),0 0 15px rgba(96,55,255,.48),0 0 22px rgba(218,38,255,.28);
+}
+.wave.wave-glow-line::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:18px;
+  background:linear-gradient(90deg,rgba(15,202,255,.12),rgba(32,102,255,.10) 38%,rgba(113,52,255,.12) 72%,rgba(225,40,255,.13));
+  filter:blur(9px);pointer-events:none;
+}
+:root[data-theme="light"] .wave.wave-glow-line{background:linear-gradient(180deg,rgba(94,111,220,.015),rgba(94,111,220,.06))!important}
