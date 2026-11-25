@@ -813,3 +813,16 @@ main > .list-status-card + .share-button{
 /* Keep the household strip's first-load spacing identical to later tab returns. */
 .app-shell.shopping-tab-active .people-strip{margin-top:18px}
 .approval-top{margin:12px 0 14px;}
+
+/* v1.7.19.7: layered ribbon artwork with independent contours */
+.wave{height:92px;position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(7,13,34,.02),rgba(7,13,34,.18))}
+.wave-art{display:block;width:100%;height:100%;position:absolute;inset:0;overflow:hidden}
+.wave-base{fill:url(#waveBase);opacity:.72}
+.wave-ribbon{stroke:none}
+.wave-ribbon-blue{fill:url(#waveBlueRibbon);opacity:.68}
+.wave-ribbon-violet{fill:url(#waveVioletRibbon);opacity:.72}
+.wave-ribbon-deep{fill:url(#waveDeepRibbon);opacity:.38}
+.wave-highlight{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.wave-highlight-blue{stroke:url(#waveBlueEdge);stroke-width:1.8;opacity:.95}
+.wave-highlight-violet{stroke:url(#wavePurpleEdge);stroke-width:1.7;opacity:.88}
+:root[data-theme="light"] .wave{background:linear-gradient(180deg,transparent,rgba(94,111,220,.05))}
