@@ -1,3 +1,7 @@
+Luke & Beth Shopping List — version 1.7.19.6
+
+Header wave refinement based on the supplied 1.7.19.5 project build. No database migration required.
+
 Luke & Beth Shared Shopping List — Version 1.7.19.3
 Branding refinement: optically balanced the shopping trolley artwork and applied the same gradient logo to the PWA app icons, Android launch splash icon and in-app header. Updated cache/version references. No SQL or Edge Function changes.
 
