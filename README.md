@@ -1,3 +1,9 @@
+Luke & Beth Shared Shopping List — Version 1.7.19.3
+Branding refinement: optically balanced the shopping trolley artwork and applied the same gradient logo to the PWA app icons, Android launch splash icon and in-app header. Updated cache/version references. No SQL or Edge Function changes.
+
+Luke & Beth Shared Shopping List — Version 1.7.19.3
+Branding refinement: optically balanced the shopping trolley artwork and applied the same gradient logo to the PWA app icons, Android launch splash icon and in-app header. Updated cache/version references. No SQL or Edge Function changes.
+
 Luke & Beth Shared Shopping List — Version 1.7.18.10
 Shopping tab spacing correction: set the top margin above the household member strip to 18px, matching the Dashboard spacing. Corrects the previous 1.7.18.9 adjustment. No SQL changes.
 
