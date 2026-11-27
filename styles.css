@@ -872,7 +872,7 @@ main > .list-status-card + .share-button{
 
 /* v1.7.21.0 — Household Lounge foundation */
 .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
-.lounge-panel{padding:15px;margin-bottom:100px;min-height:55vh}
+.lounge-panel{padding:15px;margin-bottom:18px;min-height:55vh}
 .lounge-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
 .lounge-heading>div{display:flex;align-items:center;gap:10px;min-width:0}.lounge-heading h2{font-size:18px;margin:0}.lounge-heading p{font-size:11px;color:var(--muted);margin:3px 0 0}
 .lounge-live-pill{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:20px;padding:6px 8px;font-size:8px;letter-spacing:.5px;color:var(--muted);white-space:nowrap}.lounge-live-pill i{width:6px;height:6px;border-radius:50%;background:#36d99b;box-shadow:0 0 8px #36d99b}
@@ -884,3 +884,11 @@ main > .list-status-card + .share-button{
 .lounge-message-row{display:flex;align-items:flex-end;gap:7px;max-width:88%}.lounge-message-row.mine{align-self:flex-end;flex-direction:row-reverse}.lounge-message-avatar{width:25px;height:25px;flex:none;border-radius:50%;display:grid;place-items:center;background:rgba(115,132,190,.18);font-size:10px;font-weight:800;color:var(--muted)}.lounge-message-bubble{min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:13px 13px 13px 4px;background:var(--surface);box-shadow:0 3px 12px rgba(0,0,0,.06)}.lounge-message-row.mine .lounge-message-bubble{border-color:rgba(103,145,255,.24);background:linear-gradient(135deg,rgba(68,108,207,.18),rgba(112,73,190,.15));border-radius:13px 13px 4px 13px}.lounge-message-meta{display:flex;align-items:center;gap:9px;margin-bottom:4px}.lounge-message-meta strong{font-size:9px}.lounge-message-meta time{font-size:8px;color:var(--muted)}.lounge-message-bubble p{font-size:12px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
 .lounge-compose{display:flex;gap:8px;margin-top:10px}.lounge-compose input{flex:1;min-width:0;border:1px solid var(--line);border-radius:13px;padding:12px;background:var(--surface);color:var(--text);font:inherit;font-size:12px;outline:none}.lounge-compose input:focus{border-color:var(--accent)}.lounge-compose button{width:45px;flex:none;border:0;border-radius:13px;background:var(--accent);color:#fff;font-size:19px;font-weight:800;transform:none;cursor:pointer}.lounge-compose button:disabled{opacity:.5}.lounge-status{text-align:center;font-size:9px;color:var(--muted);margin:8px 0 0}
 @media(max-width:380px){.lounge-character-intro{grid-template-columns:1fr}.lounge-character-card span{font-size:9px}}
+
+
+/* v1.7.21.1 — Lounge layout tidy-up */
+.app-shell.lounge-tab-active main > .people-strip{margin-top:18px}
+.app-shell.lounge-tab-active #shareButton,
+.app-shell.lounge-tab-active #shareHint,
+.app-shell.lounge-tab-active #listStatusCard,
+.app-shell.lounge-tab-active #approvalCard{display:none!important}

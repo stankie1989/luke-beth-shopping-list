@@ -1291,6 +1291,7 @@ function wire(){
   $("#appShell").classList.toggle("menu-tab-active",menuTabActive);
   $("#appShell").classList.toggle("shopping-tab-active",tab==="list");
   $("#appShell").classList.toggle("dashboard-tab-active",tab==="dashboard");
+  $("#appShell").classList.toggle("lounge-tab-active",tab==="lounge");
   const statusCard=$("#listStatusCard"),topFinder=$("#topMealFinderSlot"),finderButton=$("#openMealFinder"),menuActions=$(".menu-actions");
   if(statusCard)statusCard.classList.toggle("hidden",menuTabActive);
   if(topFinder)topFinder.classList.toggle("hidden",!menuTabActive);
