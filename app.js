@@ -7,7 +7,7 @@ const PICKUP_COLOUR_KEY="lb-pickup-colour-times";
 const pickupColourDefaults={greenUntil:"16:00",amberUntil:"18:00"};
 function getPickupColourTimes(){try{return {...pickupColourDefaults,...JSON.parse(localStorage.getItem(PICKUP_COLOUR_KEY)||"{}")};}catch{return {...pickupColourDefaults};}}
 let pickupColourTimes=getPickupColourTimes();
-const state={loungeMessages:[],loungeChannel:null,loungeLoaded:false,loungeAIThinking:false,loungeRemoteAIThinking:false,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={loungeMessages:[],loungeChannel:null,loungeLoaded:false,loungeAIThinking:false,loungeRemoteAIThinking:false,loungeAICharactersTyping:new Map(),loungeRemoteAICharactersTyping:new Map(),loungePreferredCharacter:null,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 let loungeTypingTimer=null;
 let loungeTypingClearTimer=null;
@@ -1221,6 +1221,17 @@ function renderLoungeMessages(){
  const names=Object.fromEntries((state.members||[]).map(m=>[m.user_id,m.display_name||"Household member"]));
  if(!state.loungeMessages.length){const empty=document.createElement("div");empty.className="lounge-empty";empty.innerHTML="<span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p>";host.append(empty);}
  state.loungeMessages.forEach(item=>{const character=item.sender_type==="character";const mine=!character&&item.sender_id===state.user?.id;const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"")+(character?" lounge-character-message lounge-"+(item.sender_name||"character").toLowerCase():"");const avatar=document.createElement("span");avatar.className="lounge-message-avatar";avatar.textContent=character?(item.sender_name==="Gromit"?"🐶":"🎩"):(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(character?(item.sender_name||"Household character"):(names[item.sender_id]||"Household member"));const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
+ 
+ // Character-specific typing rows sit inside the conversation, beside the correct avatar.
+ const activeTyping=new Map([...state.loungeAICharactersTyping,...state.loungeRemoteAICharactersTyping]);
+ for(const [character,info] of activeTyping){
+  if(!info||Date.now()-info.at>18000)continue;
+  const row=document.createElement("article");row.className="lounge-message-row lounge-character-message lounge-"+character.toLowerCase()+" lounge-typing-row";
+  const avatar=document.createElement("span");avatar.className="lounge-message-avatar lounge-typing-avatar";avatar.textContent=character==="Gromit"?"🐶":"🎩";
+  const bubble=document.createElement("div");bubble.className="lounge-message-bubble lounge-typing-bubble";
+  const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=character;const status=document.createElement("time");status.textContent="typing";meta.append(who,status);
+  const dots=document.createElement("div");dots.className="lounge-typing-dots";dots.setAttribute("aria-label",character+" is typing");dots.innerHTML="<i></i><i></i><i></i>";bubble.append(meta,dots);row.append(avatar,bubble);host.append(row);
+ }
  const count=$("#loungeMessageCount");if(count)count.textContent=`${state.loungeMessages.length} message${state.loungeMessages.length===1?"":"s"}`;host.scrollTop=host.scrollHeight;
 }
 async function sendLoungeMessage(e){
@@ -1229,33 +1240,34 @@ async function sendLoungeMessage(e){
  const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,sender_type,sender_name,message,created_at").single();
  button.disabled=false;if(error){toast("Couldn't send message. Check that the Lounge SQL setup has been run.");return;}
  input.value="";const displayName=state.member?.display_name||state.user?.user_metadata?.name||"Household member";broadcastLoungeTyping(displayName,false);if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
- // Let both household members see that the characters are preparing a reply.
- state.loungeAIThinking=true;renderLoungeTyping();broadcastLoungeAIThinking(true);
+ // Show the selected character in the conversation, not a generic banner.
+ const preferredCharacter=Math.random()<0.5?"Alfred":"Gromit";
+ state.loungePreferredCharacter=preferredCharacter;
+ const typingInfo={at:Date.now()};state.loungeAICharactersTyping.set(preferredCharacter,typingInfo);
+ renderLoungeTyping();renderLoungeMessages();broadcastLoungeAICharacterTyping(preferredCharacter,true);
  try{
-  const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
+  const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id,typing_character:preferredCharacter}});
   if(aiError){console.warn("Lounge AI reply unavailable:",aiError);if(aiError.message?.includes("not found")||aiError.message?.includes("404")){$("#loungeStatus").textContent="Chat connected · AI characters need their server function installed.";}else{$("#loungeStatus").textContent="Chat connected · AI is temporarily unavailable.";}}
- }finally{state.loungeAIThinking=false;renderLoungeTyping();broadcastLoungeAIThinking(false);}
+ }finally{state.loungeAICharactersTyping.delete(preferredCharacter);renderLoungeTyping();renderLoungeMessages();broadcastLoungeAICharacterTyping(preferredCharacter,false);}
 }
 function renderLoungeTyping(){
  const host=$("#loungeTyping");if(!host)return;
  const names=[...loungeRemoteTyping.values()].filter(x=>Date.now()-x.at<4500).map(x=>x.name);
- const aiThinking=state.loungeAIThinking||state.loungeRemoteAIThinking;
- host.hidden=!names.length&&!aiThinking;
- host.classList.toggle("ai-thinking",aiThinking);
- host.textContent=aiThinking?"Alfred & Gromit are thinking…":names.length?`${names.join(" and ")} ${names.length===1?"is":"are"} typing ···`:"";
+ host.hidden=!names.length;host.classList.remove("ai-thinking");
+ host.textContent=names.length?`${names.join(" and ")} ${names.length===1?"is":"are"} typing ···`:"";
 }
 function broadcastLoungeTyping(name,typing=true){
  if(!state.loungeChannel)return;
  state.loungeChannel.send({type:"broadcast",event:"typing",payload:{name,typing,at:Date.now()}});
 }
-function broadcastLoungeAIThinking(thinking){
+function broadcastLoungeAICharacterTyping(character,typing=true){
  if(!state.loungeChannel)return;
- state.loungeChannel.send({type:"broadcast",event:"ai-thinking",payload:{thinking,at:Date.now()}});
+ state.loungeChannel.send({type:"broadcast",event:"ai-character-typing",payload:{character,typing,at:Date.now()}});
 }
 function subscribeLounge(){
  if(!state.householdId||state.loungeChannel)return;
  state.loungeChannel=db.channel("lounge-"+state.householdId)
- .on("postgres_changes",{event:"INSERT",schema:"public",table:"household_lounge_messages",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new&&!state.loungeMessages.some(x=>x.id===payload.new.id)){state.loungeMessages.push(payload.new);renderLoungeMessages();}})
+ .on("postgres_changes",{event:"INSERT",schema:"public",table:"household_lounge_messages",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new&&!state.loungeMessages.some(x=>x.id===payload.new.id)){state.loungeMessages.push(payload.new);if(payload.new.sender_type==="character"){state.loungeAICharactersTyping.delete(payload.new.sender_name);state.loungeRemoteAICharactersTyping.delete(payload.new.sender_name);}renderLoungeMessages();}})
  .on("broadcast",{event:"typing"},({payload})=>{
    if(!payload||!payload.name)return;
    if(payload.typing)loungeRemoteTyping.set(payload.name,{name:payload.name,at:Date.now()});
@@ -1264,9 +1276,11 @@ function subscribeLounge(){
    clearTimeout(loungeTypingClearTimer);
    loungeTypingClearTimer=setTimeout(()=>{for(const [k,v] of loungeRemoteTyping){if(Date.now()-v.at>4500)loungeRemoteTyping.delete(k);}renderLoungeTyping();},4600);
  })
- .on("broadcast",{event:"ai-thinking"},({payload})=>{
-   state.loungeRemoteAIThinking=!!payload?.thinking;
-   renderLoungeTyping();
+ .on("broadcast",{event:"ai-character-typing"},({payload})=>{
+   const character=payload?.character;if(!["Alfred","Gromit"].includes(character))return;
+   if(payload.typing)state.loungeRemoteAICharactersTyping.set(character,{at:Date.now()});
+   else state.loungeRemoteAICharactersTyping.delete(character);
+   renderLoungeMessages();
  }).subscribe();
 }
 function openLounge(){loadLoungeMessages();subscribeLounge();}

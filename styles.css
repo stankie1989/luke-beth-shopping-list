@@ -905,3 +905,17 @@ main > .list-status-card + .share-button{
 
 /* v1.7.23.1: compact message count without a conversation heading */
 .lounge-message-count-row{display:flex;justify-content:flex-end;align-items:center;margin:0 3px 7px;color:var(--muted);font-size:11px;line-height:1.2;min-height:14px}
+
+
+/* v1.7.26.0 — inline character typing and more readable Lounge text */
+.lounge-message-bubble p{font-size:13px;line-height:1.5}
+.lounge-message-meta strong{font-size:10px}
+.lounge-message-meta time{font-size:9px}
+.lounge-typing-row{opacity:.96}
+.lounge-typing-bubble{min-width:82px;padding-top:8px;padding-bottom:10px;border-color:rgba(150,105,255,.34);background:linear-gradient(135deg,rgba(125,83,220,.13),rgba(168,116,255,.10))}
+.lounge-typing-bubble .lounge-message-meta{margin-bottom:7px}
+.lounge-typing-bubble .lounge-message-meta strong{color:#a879ff}
+.lounge-typing-dots{display:flex;align-items:center;gap:5px;height:12px;padding:0 2px}
+.lounge-typing-dots i{display:block;width:7px;height:7px;border-radius:50%;background:#a879ff;animation:loungeTypingPulse 1.15s infinite ease-in-out;opacity:.45}
+.lounge-typing-dots i:nth-child(2){animation-delay:.16s}.lounge-typing-dots i:nth-child(3){animation-delay:.32s}
+@keyframes loungeTypingPulse{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}

@@ -1,8 +1,8 @@
-# Luke & Beth's Shopping List — Version 1.7.25.0
+# Luke & Beth's Shopping List — Version 1.7.26.0
 
 ## Release notes
 
-### 1.7.25.0 — Household Lounge AI conversation upgrade
+### 1.7.26.0 — Household Lounge AI conversation upgrade
 - Made the AI thinking indicator more noticeable using the app's purple accent colour.
 - Increased the AI indicator font size and weight while leaving ordinary human typing indicators more subtle.
 - Updated the Lounge AI Edge Function prompt to strengthen Alfred's butler voice and Gromit's playful, affectionate personality.
@@ -32,3 +32,6 @@ Keep the existing Supabase secrets and database tables. In particular, do not re
 
 ## Important
 The frontend and Edge Function are both included in this package, but they deploy separately: upload the `build198` contents to GitHub Pages and deploy the Edge Function to Supabase. The Edge Function change has not been live-tested against your Supabase project. After deployment, test a normal message, a quiet/no-reply turn, and a two-character turn. Existing usage limits are retained in the code.
+
+
+Version 1.7.26.0: Lounge message text and character labels are slightly larger. AI typing is displayed inline beside the selected character avatar instead of the generic combined thinking banner. The frontend broadcasts a character-specific typing event. The deployed lounge-ai Edge Function must accept `typing_character` and broadcast `ai-character-typing` for cross-device indicators to be fully synchronised. Scheduled independent conversations and the updated silent-action Gromit personality require the separate server-side update and scheduler setup; they are not activated by this frontend ZIP alone.
