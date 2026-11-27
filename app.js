@@ -7,7 +7,7 @@ const PICKUP_COLOUR_KEY="lb-pickup-colour-times";
 const pickupColourDefaults={greenUntil:"16:00",amberUntil:"18:00"};
 function getPickupColourTimes(){try{return {...pickupColourDefaults,...JSON.parse(localStorage.getItem(PICKUP_COLOUR_KEY)||"{}")};}catch{return {...pickupColourDefaults};}}
 let pickupColourTimes=getPickupColourTimes();
-const state={loungeMessages:[],loungeChannel:null,loungeLoaded:false,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={loungeMessages:[],loungeChannel:null,loungeLoaded:false,loungeAIThinking:false,loungeRemoteAIThinking:false,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 let loungeTypingTimer=null;
 let loungeTypingClearTimer=null;
@@ -1229,19 +1229,27 @@ async function sendLoungeMessage(e){
  const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,sender_type,sender_name,message,created_at").single();
  button.disabled=false;if(error){toast("Couldn't send message. Check that the Lounge SQL setup has been run.");return;}
  input.value="";const displayName=state.member?.display_name||state.user?.user_metadata?.name||"Household member";broadcastLoungeTyping(displayName,false);if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
- // Ask the secure server function to let Alfred and/or Gromit join in.
- const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
- if(aiError){console.warn("Lounge AI reply unavailable:",aiError);if(aiError.message?.includes("not found")||aiError.message?.includes("404")){$("#loungeStatus").textContent="Chat connected · AI characters need their server function installed.";}else{$("#loungeStatus").textContent="Chat connected · AI is temporarily unavailable.";}}
+ // Let both household members see that the characters are preparing a reply.
+ state.loungeAIThinking=true;renderLoungeTyping();broadcastLoungeAIThinking(true);
+ try{
+  const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
+  if(aiError){console.warn("Lounge AI reply unavailable:",aiError);if(aiError.message?.includes("not found")||aiError.message?.includes("404")){$("#loungeStatus").textContent="Chat connected · AI characters need their server function installed.";}else{$("#loungeStatus").textContent="Chat connected · AI is temporarily unavailable.";}}
+ }finally{state.loungeAIThinking=false;renderLoungeTyping();broadcastLoungeAIThinking(false);}
 }
 function renderLoungeTyping(){
  const host=$("#loungeTyping");if(!host)return;
  const names=[...loungeRemoteTyping.values()].filter(x=>Date.now()-x.at<4500).map(x=>x.name);
- host.hidden=!names.length;
- host.textContent=names.length?`${names.join(" and ")} ${names.length===1?"is":"are"} typing ···`:"";
+ const aiThinking=state.loungeAIThinking||state.loungeRemoteAIThinking;
+ host.hidden=!names.length&&!aiThinking;
+ host.textContent=aiThinking?"Alfred and Gromit are thinking ···":names.length?`${names.join(" and ")} ${names.length===1?"is":"are"} typing ···`:"";
 }
 function broadcastLoungeTyping(name,typing=true){
  if(!state.loungeChannel)return;
  state.loungeChannel.send({type:"broadcast",event:"typing",payload:{name,typing,at:Date.now()}});
+}
+function broadcastLoungeAIThinking(thinking){
+ if(!state.loungeChannel)return;
+ state.loungeChannel.send({type:"broadcast",event:"ai-thinking",payload:{thinking,at:Date.now()}});
 }
 function subscribeLounge(){
  if(!state.householdId||state.loungeChannel)return;
@@ -1254,6 +1262,10 @@ function subscribeLounge(){
    renderLoungeTyping();
    clearTimeout(loungeTypingClearTimer);
    loungeTypingClearTimer=setTimeout(()=>{for(const [k,v] of loungeRemoteTyping){if(Date.now()-v.at>4500)loungeRemoteTyping.delete(k);}renderLoungeTyping();},4600);
+ })
+ .on("broadcast",{event:"ai-thinking"},({payload})=>{
+   state.loungeRemoteAIThinking=!!payload?.thinking;
+   renderLoungeTyping();
  }).subscribe();
 }
 function openLounge(){loadLoungeMessages();subscribeLounge();}
