@@ -894,7 +894,7 @@ main > .list-status-card + .share-button{
 .app-shell.lounge-tab-active #approvalCard{display:none!important}
 
 /* 1.7.22.0 character message styling */
-.lounge-character-message{align-self:flex-start;max-width:92%}.lounge-character-message .lounge-message-avatar{width:32px;height:32px;font-size:17px;background:rgba(123,105,205,.18)}.lounge-character-message .lounge-message-bubble{background:linear-gradient(135deg,rgba(34,88,117,.24),rgba(92,62,139,.22));border-color:rgba(93,150,211,.28)}.lounge-character-message.lounge-alfred .lounge-message-bubble{background:linear-gradient(135deg,rgba(115,91,47,.20),rgba(68,61,54,.22));border-color:rgba(188,158,105,.28)}.lounge-character-message .lounge-message-meta strong{font-size:10px}
+.lounge-character-message{align-self:flex-start;max-width:92%}.lounge-character-message .lounge-message-avatar{width:32px;height:32px;font-size:17px;background:rgba(123,105,205,.18)}.lounge-character-message .lounge-message-bubble{background:linear-gradient(135deg,rgba(34,88,117,.24),rgba(92,62,139,.22));border-color:rgba(93,150,211,.28)}.lounge-character-message .lounge-message-meta strong{font-size:10px}
 
 /* Lounge 1.7.23.0 — cleaner conversation-first layout */
 .lounge-messages{height:min(58vh,620px);min-height:280px}
