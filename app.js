@@ -1207,25 +1207,28 @@ function updateAuthMode(){
 async function loadLoungeMessages(){
  if(!state.householdId)return;
  const host=$("#loungeMessages");
- const {data,error}=await db.from("household_lounge_messages").select("id,household_id,sender_id,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:true}).limit(150);
+ const {data,error}=await db.from("household_lounge_messages").select("id,household_id,sender_id,sender_type,sender_name,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:true}).limit(150);
  if(error){
   host.innerHTML="";const note=document.createElement("div");note.className="lounge-empty";note.innerHTML="<span>🛠️</span><strong>One small setup step remains</strong><p>The Lounge database hasn't been installed yet. Run the 1.7.21.0 SQL setup supplied with this update, then reopen the Lounge.</p>";host.append(note);$("#loungeStatus").textContent="Waiting for the Lounge database setup.";state.loungeLoaded=false;return;
  }
- state.loungeMessages=data||[];renderLoungeMessages();state.loungeLoaded=true;$("#loungeStatus").textContent="Connected · Messages are shared with your household.";
+ state.loungeMessages=data||[];renderLoungeMessages();state.loungeLoaded=true;$("#loungeStatus").textContent="Connected · Alfred and Gromit are listening.";
 }
 function renderLoungeMessages(){
  const host=$("#loungeMessages");if(!host)return;host.innerHTML="";
  const names=Object.fromEntries((state.members||[]).map(m=>[m.user_id,m.display_name||"Household member"]));
  if(!state.loungeMessages.length){const empty=document.createElement("div");empty.className="lounge-empty";empty.innerHTML="<span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p>";host.append(empty);}
- state.loungeMessages.forEach(item=>{const mine=item.sender_id===state.user?.id;const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"");const avatar=document.createElement("span");avatar.className="lounge-message-avatar";avatar.textContent=(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(names[item.sender_id]||"Household member");const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
+ state.loungeMessages.forEach(item=>{const character=item.sender_type==="character";const mine=!character&&item.sender_id===state.user?.id;const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"")+(character?" lounge-character-message lounge-"+(item.sender_name||"character").toLowerCase():"");const avatar=document.createElement("span");avatar.className="lounge-message-avatar";avatar.textContent=character?(item.sender_name==="Gromit"?"🐶":"🎩"):(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(character?(item.sender_name||"Household character"):(names[item.sender_id]||"Household member"));const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
  $("#loungeMessageCount").textContent=`${state.loungeMessages.length} message${state.loungeMessages.length===1?"":"s"}`;host.scrollTop=host.scrollHeight;
 }
 async function sendLoungeMessage(e){
  e.preventDefault();const input=$("#loungeMessageInput"),message=input.value.trim();if(!message||!state.householdId||!state.user)return;
  const button=$("#loungeSendButton");button.disabled=true;
- const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,message,created_at").single();
+ const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,sender_type,sender_name,message,created_at").single();
  button.disabled=false;if(error){toast("Couldn't send message. Check that the Lounge SQL setup has been run.");return;}
  input.value="";if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
+ // Ask the secure server function to let Alfred and/or Gromit join in.
+ const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
+ if(aiError){console.warn("Lounge AI reply unavailable:",aiError);if(aiError.message?.includes("not found")||aiError.message?.includes("404")){$("#loungeStatus").textContent="Chat connected · AI characters need their server function installed.";}else{$("#loungeStatus").textContent="Chat connected · AI is temporarily unavailable.";}}
 }
 function subscribeLounge(){
  if(!state.householdId||state.loungeChannel)return;
