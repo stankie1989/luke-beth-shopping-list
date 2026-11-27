@@ -1240,15 +1240,12 @@ async function sendLoungeMessage(e){
  const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,sender_type,sender_name,message,created_at").single();
  button.disabled=false;if(error){toast("Couldn't send message. Check that the Lounge SQL setup has been run.");return;}
  input.value="";const displayName=state.member?.display_name||state.user?.user_metadata?.name||"Household member";broadcastLoungeTyping(displayName,false);if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
- // Show the selected character in the conversation, not a generic banner.
- const preferredCharacter=Math.random()<0.5?"Alfred":"Gromit";
- state.loungePreferredCharacter=preferredCharacter;
- const typingInfo={at:Date.now()};state.loungeAICharactersTyping.set(preferredCharacter,typingInfo);
- renderLoungeTyping();renderLoungeMessages();broadcastLoungeAICharacterTyping(preferredCharacter,true);
+ // The Edge Function now broadcasts the real speaker, in reply order.
+ // Do not guess a character locally: that caused the wrong avatar to appear.
  try{
-  const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id,typing_character:preferredCharacter}});
+  const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
   if(aiError){console.warn("Lounge AI reply unavailable:",aiError);if(aiError.message?.includes("not found")||aiError.message?.includes("404")){$("#loungeStatus").textContent="Chat connected · AI characters need their server function installed.";}else{$("#loungeStatus").textContent="Chat connected · AI is temporarily unavailable.";}}
- }finally{state.loungeAICharactersTyping.delete(preferredCharacter);renderLoungeTyping();renderLoungeMessages();broadcastLoungeAICharacterTyping(preferredCharacter,false);}
+ }finally{renderLoungeTyping();renderLoungeMessages();}
 }
 function renderLoungeTyping(){
  const host=$("#loungeTyping");if(!host)return;
@@ -1369,7 +1366,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();updateDashboardDateTime();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.25.0",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.27.0",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
