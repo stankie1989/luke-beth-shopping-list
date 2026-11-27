@@ -1,116 +1,56 @@
-Luke & Beth Shopping List — version 1.7.19.6
+# Luke & Beth's Shopping List — Version 1.7.23.1
 
-Header wave refinement based on the supplied 1.7.19.5 project build. No database migration required.
+## Release notes
 
-Luke & Beth Shared Shopping List — Version 1.7.19.3
-Branding refinement: optically balanced the shopping trolley artwork and applied the same gradient logo to the PWA app icons, Android launch splash icon and in-app header. Updated cache/version references. No SQL or Edge Function changes.
+### 1.7.23.1 — Lounge message counter and package cleanup
+- Restored the message counter above the chat.
+- Kept the “Household conversation” heading removed.
+- Kept the character introduction cards and welcome panel removed.
+- Consolidated release notes into this single README.
+- Removed old, duplicate README files and kept SQL/Edge Function files out of the app ZIP.
+- Updated the service-worker cache version so devices can receive the new files.
 
-Luke & Beth Shared Shopping List — Version 1.7.19.3
-Branding refinement: optically balanced the shopping trolley artwork and applied the same gradient logo to the PWA app icons, Android launch splash icon and in-app header. Updated cache/version references. No SQL or Edge Function changes.
+### 1.7.23.0 — Clean Lounge chat
+- Removed the character introduction cards.
+- Removed the large welcome/information panel.
+- Removed the “Household conversation” heading and message count (the counter is restored in 1.7.23.1).
+- Added human typing indicator support for Luke and Beth.
+- Preserved the existing Lounge messaging and AI integration.
 
-Luke & Beth Shared Shopping List — Version 1.7.18.10
-Shopping tab spacing correction: set the top margin above the household member strip to 18px, matching the Dashboard spacing. Corrects the previous 1.7.18.9 adjustment. No SQL changes.
+### 1.7.22.0 — Alfred and Gromit AI
+- Added AI-generated character replies through the Supabase `lounge-ai` Edge Function.
+- Added Alfred and Gromit character message styling.
+- Added recent conversation context for character replies.
+- Added server-side cooldown and daily usage limits.
+- Required a Gemini API key stored as a Supabase secret named `GEMINI_API_KEY`.
 
-Luke & Beth Shared Shopping List — Version 1.7.18.9
-Shopping tab spacing refinement: tightened the gap above the Luke & Beth household member strip to bring it into line with the Dashboard. Added shopping-tab-active styling. Built on 1.7.18.8; no SQL changes required.
+### 1.7.21.1 — Lounge layout refinement
+- Adjusted spacing around the household member panel.
+- Removed the redundant “Share with Beth” area from the Lounge screen.
+- Reduced unnecessary space beneath the chat.
 
-Luke & Beth Shared Shopping List — Version 1.7.18.8
-Shopping screen update: incoming like/approval prompt remains at the top of the screen; the Changes made or green up-to-date status card now appears below the shopping list, directly above Share with Beth. No SQL changes required. Built on 1.7.18.7.
+### 1.7.21.0 — Household Lounge foundation
+- Added a dedicated Household Lounge tab.
+- Added shared household text messaging backed by Supabase.
+- Added introductory character placeholders for Alfred and Gromit.
 
-Luke & Beth Shared Shopping List — Version 1.7.18.7
-Dashboard refinement: aligned the date and compact digital clock horizontally with the Household dashboard heading, reducing vertical space while retaining the date above the live 24-hour clock. Built on 1.7.18.6; no SQL changes required.
+### 1.7.20.0 — Compact sharing status
+- Introduced a compact household sharing status indicator.
 
-Luke & Beth Shared Shopping List — Version 1.7.18.6
+### 1.7.19.9 — Compact header accent
+- Refined the compact header glow line and reduced excess spacing.
 
-Dashboard update: kept the household dashboard date in its existing right-hand position and added a compact live 24-hour digital clock directly underneath. The clock refreshes every minute and follows the device's local time. No SQL changes required; built on 1.7.18.5.
+## Upload instructions
+1. Extract this ZIP.
+2. Open the `build198` folder.
+3. Upload the contents of `build198` to the existing GitHub Pages repository, replacing the corresponding files.
+4. Keep the `images` folder and all its contents.
+5. Refresh the app. If an installed PWA still shows the previous version, close and reopen it after the service worker updates.
 
-Luke & Beth Shared Shopping List — Version 1.7.18.5
+## Supabase files
+SQL migrations and Edge Function source are intentionally supplied separately in the ChatGPT conversation, not inside this app ZIP. Do not delete or replace your deployed Supabase function or existing database objects when uploading this package.
 
-Dashboard update: replaced duplicated shopping totals with a compact Dinner plan tile beside Still to buy. The dinner tile counts consecutive planned dinners from today and names the first day without a planned dinner. Built on 1.7.18.4; no SQL changes required.
-
-Luke & Beth Shared Shopping List — Version 1.7.18.4
-
-Update: colour-coded Beth’s shift finishing-time badges on the Dashboard. Green for finishes before 16:00, amber from 16:00 through 18:00, and red after 18:00. The full shift time remains visible beneath the highlighted finish time. No SQL or database changes required.
-
-Luke & Beth Shared Shopping List — Version 1.7.18
-
-Update: added a Plymouth city-centre weather card to the Household Dashboard. It selects Beth's next upcoming timed shift from the connected read-only Google Calendar and shows the hourly forecast closest to her finishing time: temperature, feels-like temperature, precipitation probability, wind speed and conditions. Includes a manual refresh control and Open-Meteo attribution. Weather is retrieved from Open-Meteo's public forecast API; no API key, SQL migration or additional Google permission is required. Forecast availability depends on the provider's forecast horizon.
-
-Luke & Beth Shared Shopping List — Version 1.7.16.1
-
-Dashboard refinement, built from 1.7.16:
-- Removes the list-change status banner, Share with Beth button and share hint from the Dashboard only. Sharing remains available on the Shopping tab.
-- Removes the recent household activity section from the Dashboard.
-- Fixes dinner cards to read the meal planner's saved `name` field.
-- Improves mobile card sizing and wrapping to keep dashboard text and category bars inside their borders.
-- Keeps the Shopping, Dashboard, Menu and More navigation order.
-- No SQL or database changes required.
-
-Luke & Beth Shared Shopping List — Version 1.7.15.5
-
-Update: recipe method paragraphs and numbered steps now display as separate softly tinted outlined cards, alternating blue, teal and purple. Built from confirmed working 1.7.15.4. Preserves menu cleanup, meal finder and update checks. No SQL required.
-
-Luke & Beth Shared Shopping List — Version 1.7.15.4
-
-Update: online recipe methods are formatted as spaced numbered steps or separated paragraphs. Fixed displayed app version, stylesheet cache-busting URL and service-worker registration version. Built from the confirmed working 1.7.15.3 baseline; preserves its Menu banner/button fixes. No SQL required.
-
-Luke & Beth Shared Shopping List — Version 1.7.15.3
-
-Fix: Menu tab now persistently hides the list status banner, Share with Beth button, share hint and approval card, even when background list-status refreshes run. The What can I cook? button remains at the top of Menu. No SQL required.
-
-Luke & Beth Shared Shopping List — Version 1.7.15.2
-
-Update: hides the list-change status banner on the login screen and Menu tab. The existing What can I cook? button is moved to a prominent full-width position at the top of Menu, and returns to its original location when leaving Menu. No database changes or SQL required.
-
-# Luke & Beth's Shared Shopping List — v1.7.15
-
-Automatic smart category inference, built from confirmed 1.7.13.3.
-- Expands offline category matching with scored product terms and phrases.
-- Exact household learned corrections retain highest priority.
-- Automatically recognises custom categories using category-name concepts and built-in product knowledge (e.g. Pet Food, Baby Products, Toiletries, Cleaning Products).
-- Uses product-specific phrase weighting to reduce ambiguous classifications (e.g. chicken nuggets -> Frozen).
-- No manual keyword entry and no external AI/API call.
-- No SQL changes.
-
-
-## v1.7.15 – Smart Meal Finder
-- Favourite meal matches appear first, followed by online recipe ideas from TheMealDB.
-- Recipe cards compare available and missing ingredients, show full ingredients and instructions, and can add missing items to a chosen shopping list.
-- Online recipes can be saved to household favourites.
-- Quick links search BBC Good Food and Slimming World-style recipes using the ingredients entered.
-- No database migration or SQL required.
-
-
-## Version 1.7.16.3
-- Refined household dashboard heading and date layout for narrow mobile screens.
-- Dashboard dinner cards now use the same meal artwork as the Menu Planner.
-- Corrected bottom navigation to use four equal-width columns.
-- No database or SQL changes.
-
-
-## Version 1.7.16.3
-- Added spacing above the household member strip when Dashboard is selected.
-- Inset the dashboard title icon and date from the card edges for improved mobile alignment.
-- No SQL changes.
-
-
-## Version 1.7.17 – Google Calendar dashboard connection
-- Added a read-only Google Calendar connection card to the Household Dashboard.
-- Uses the deployed Supabase `google-calendar-oauth` Edge Function and the existing private token table.
-- Displays matching Beth shift events for the next 30 days and their start/finish times.
-- Calendar access is optional; shopping list and menu features remain unchanged.
-- Requires Google OAuth and Supabase Edge Function setup; no additional SQL is required beyond the private token table already created.
-
-
-### 1.7.18.4 – Adjustable pickup colour thresholds
-- Added More settings for Beth pickup badge colour cutoffs.
-- Defaults remain green before 16:00, amber through 18:00, red after 18:00.
-- Preferences are saved locally on each device; no database or SQL changes.
-
-
-## Version 1.7.19.5
-- Rebuilt the header decoration as three smooth overlapping blue-to-purple wave layers with crisp gradient highlights, matching the approved layered mock-up more closely.
-- Applied the shopping-tab member-strip spacing immediately when the app opens, preventing the first-load spacing jump.
-- Moved the incoming shared-list approval prompt below the household member strip so it no longer appears above or pushes that strip down.
-- Preserved all existing app features and household Google Calendar integration. No SQL or Edge Function changes.
-- Service-worker cache advanced to v85.
+## Notes
+- This package is the app frontend only.
+- Existing Supabase project settings and secrets are not included.
+- Gemini API keys must remain in Supabase secrets and must never be placed in frontend files.
