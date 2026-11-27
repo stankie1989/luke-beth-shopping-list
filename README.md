@@ -1,19 +1,20 @@
-# Luke & Beth Shopping List — 1.8.6
+# Luke & Beth Shopping List — 1.8.7
 
-## What's included
-- Carries forward the verified Lounge fixes from 1.8.5: styled clear-chat confirmation, household @mention suggestions and private direct messages, animated typing for canned replies, and larger Wallace/Gromit character cards.
-- Updates the frontend version references to 1.8.6 and increments the service-worker cache to `luke-beth-shopping-v106` so installed devices can fetch the new release.
+## Release notes
+- Carries forward the confirmed Lounge interface fixes from 1.8.5/1.8.6: styled clear-chat confirmation, household @mention suggestions and private direct messages, typing animation for canned replies, and larger Wallace/Gromit character cards.
+- Keeps the existing short canned replies unchanged.
+- Updates frontend asset references and app version to 1.8.7.
+- Increments the service-worker cache to `luke-beth-shopping-v107` for automatic update detection.
 
-## Wallace conversation update
-The more natural Northern English voice, concise acknowledgements, reduced repetition and duplicate-request protection are implemented in the separate Supabase Edge Function update supplied in the chat as `Index.ts`. Deploy that function update as well as this frontend ZIP for the complete 1.8.6 release.
+## Required Supabase update
+The Wallace personality reset is delivered separately as the complete `lounge-ai` Edge Function `Index.ts` in the ChatGPT conversation. Deploy that function as well as these frontend files. No SQL migration is required.
 
-## Deployment
-1. Upload the contents of `build198` to the existing static hosting location, replacing the previous frontend files.
-2. Replace the Supabase `lounge-ai` Edge Function source with the complete `Index.ts` supplied alongside this ZIP, then deploy it.
-3. No SQL migration is required. The function uses the existing Lounge messages and AI usage tables.
-4. Open the app on both devices and use **Update now** if prompted. The service-worker cache is `luke-beth-shopping-v106`.
+## Deploy
+1. Upload the contents of this `build198` folder to the existing GitHub Pages deployment, replacing the previous frontend files.
+2. Replace the Supabase `lounge-ai` Edge Function with the supplied `Index.ts` and deploy it.
+3. Open the app on both devices and use **Update now** if prompted. The service-worker cache is `luke-beth-shopping-v107`.
 
 ## Notes
-- The AI model remains `gemini-3.5-flash-lite`; this update changes Wallace's instructions and request handling, not the model.
-- Gromit remains completely non-verbal.
-- The frontend ZIP contains only the app's existing required files.
+- The Gemini model remains `gemini-3.5-flash-lite`.
+- The Edge Function starts Wallace from a clean character definition. It does not inherit the former assistant's personality instructions. Household data context and Gromit's non-verbal supporting role remain separate.
+- Historical character messages previously stored under the old name are displayed as Wallace for continuity; new AI replies are Wallace and optionally Gromit only.

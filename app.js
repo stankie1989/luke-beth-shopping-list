@@ -1333,7 +1333,8 @@ function subscribeLounge(){
    loungeTypingClearTimer=setTimeout(()=>{for(const [k,v] of loungeRemoteTyping){if(Date.now()-v.at>4500)loungeRemoteTyping.delete(k);}renderLoungeTyping();},4600);
  })
  .on("broadcast",{event:"ai-character-typing"},({payload})=>{
-   const character=payload?.character;if(!["Wallace","Alfred","Gromit"].includes(character))return;
+   const incomingCharacter=payload?.character;if(!["Wallace","Alfred","Gromit"].includes(incomingCharacter))return;
+   const character=incomingCharacter==="Alfred"?"Wallace":incomingCharacter;
    if(payload.typing)state.loungeRemoteAICharactersTyping.set(character,{at:Date.now()});
    else state.loungeRemoteAICharactersTyping.delete(character);
    renderLoungeMessages();
