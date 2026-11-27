@@ -1220,14 +1220,14 @@ function renderLoungeMessages(){
  const host=$("#loungeMessages");if(!host)return;host.innerHTML="";
  const names=Object.fromEntries((state.members||[]).map(m=>[m.user_id,m.display_name||"Household member"]));
  if(!state.loungeMessages.length){const empty=document.createElement("div");empty.className="lounge-empty";empty.innerHTML="<span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p>";host.append(empty);}
- state.loungeMessages.forEach(item=>{const character=item.sender_type==="character";const mine=!character&&item.sender_id===state.user?.id;const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"")+(character?" lounge-character-message lounge-"+(item.sender_name||"character").toLowerCase():"");const avatar=document.createElement("span");avatar.className="lounge-message-avatar";avatar.textContent=character?(item.sender_name==="Gromit"?"🐶":"🎩"):(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(character?(item.sender_name||"Household character"):(names[item.sender_id]||"Household member"));const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
+ state.loungeMessages.forEach(item=>{const character=item.sender_type==="character";const mine=!character&&item.sender_id===state.user?.id;const characterName=character?(item.sender_name==="Alfred"?"Wallace":item.sender_name):"";const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"")+(character?" lounge-character-message lounge-"+(characterName||"character").toLowerCase():"");const avatar=character?document.createElement("img"):document.createElement("span");avatar.className="lounge-message-avatar"+(character?" lounge-avatar-image":"");if(character){avatar.src=characterName==="Gromit"?"./images/gromit-avatar.png":"./images/wallace-avatar.png";avatar.alt=characterName;}else avatar.textContent=(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(character?characterName:(names[item.sender_id]||"Household member"));const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
  
  // Character-specific typing rows sit inside the conversation, beside the correct avatar.
  const activeTyping=new Map([...state.loungeAICharactersTyping,...state.loungeRemoteAICharactersTyping]);
  for(const [character,info] of activeTyping){
   if(!info||Date.now()-info.at>18000)continue;
   const row=document.createElement("article");row.className="lounge-message-row lounge-character-message lounge-"+character.toLowerCase()+" lounge-typing-row";
-  const avatar=document.createElement("span");avatar.className="lounge-message-avatar lounge-typing-avatar";avatar.textContent=character==="Gromit"?"🐶":"🎩";
+  const avatar=document.createElement("img");avatar.className="lounge-message-avatar lounge-typing-avatar lounge-avatar-image";avatar.src=character==="Gromit"?"./images/gromit-avatar.png":"./images/wallace-avatar.png";avatar.alt=character;
   const bubble=document.createElement("div");bubble.className="lounge-message-bubble lounge-typing-bubble";
   const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=character;const status=document.createElement("time");status.textContent="typing";meta.append(who,status);
   const dots=document.createElement("div");dots.className="lounge-typing-dots";dots.setAttribute("aria-label",character+" is typing");dots.innerHTML="<i></i><i></i><i></i>";bubble.append(meta,dots);row.append(avatar,bubble);host.append(row);
@@ -1244,7 +1244,7 @@ async function sendLoungeMessage(e){
  // Do not guess a character locally: that caused the wrong avatar to appear.
  try{
   const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
-  if(aiError){console.warn("Lounge AI reply unavailable:",aiError);toast(aiError.message?.includes("not found")||aiError.message?.includes("404")?"Alfred needs his server function installed.":"Alfred is temporarily unavailable. Your chat connection is still active.");}
+  if(aiError){console.warn("Lounge AI reply unavailable:",aiError);toast(aiError.message?.includes("not found")||aiError.message?.includes("404")?"Wallace needs his server function installed.":"Wallace is temporarily unavailable. Your chat connection is still active.");}
  }finally{renderLoungeTyping();renderLoungeMessages();}
 }
 function renderLoungeTyping(){
@@ -1276,7 +1276,7 @@ function subscribeLounge(){
    loungeTypingClearTimer=setTimeout(()=>{for(const [k,v] of loungeRemoteTyping){if(Date.now()-v.at>4500)loungeRemoteTyping.delete(k);}renderLoungeTyping();},4600);
  })
  .on("broadcast",{event:"ai-character-typing"},({payload})=>{
-   const character=payload?.character;if(!["Alfred","Gromit"].includes(character))return;
+   const character=payload?.character;if(!["Wallace","Alfred","Gromit"].includes(character))return;
    if(payload.typing)state.loungeRemoteAICharactersTyping.set(character,{at:Date.now()});
    else state.loungeRemoteAICharactersTyping.delete(character);
    renderLoungeMessages();
@@ -1368,7 +1368,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();updateDashboardDateTime();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.30.0",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.8.0",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
