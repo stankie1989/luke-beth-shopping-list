@@ -1,19 +1,19 @@
-# Luke & Beth Shopping List — 1.8.5
+# Luke & Beth Shopping List — 1.8.6
 
 ## What's included
-- Replaces the browser's plain confirmation prompt with a styled in-app confirmation before clearing the shared Lounge chat. The clear action deletes both household Lounge messages and direct messages only after confirmation.
-- Fixes the @mention regular expressions so typing `@` and part of a household member's name filters the suggestion list correctly. Selecting a member inserts their name and routes the message privately, without invoking Wallace or using AI.
-- Gives Wallace's canned greetings and quick replies the same animated character typing indicator as AI replies, including a short natural pause.
-- Makes Wallace and Gromit's names, descriptions and portraits more readable.
-- Corrects the app, stylesheet, script and service-worker version references so they consistently identify 1.8.5.
+- Carries forward the verified Lounge fixes from 1.8.5: styled clear-chat confirmation, household @mention suggestions and private direct messages, animated typing for canned replies, and larger Wallace/Gromit character cards.
+- Updates the frontend version references to 1.8.6 and increments the service-worker cache to `luke-beth-shopping-v106` so installed devices can fetch the new release.
+
+## Wallace conversation update
+The more natural Northern English voice, concise acknowledgements, reduced repetition and duplicate-request protection are implemented in the separate Supabase Edge Function update supplied in the chat as `Index.ts`. Deploy that function update as well as this frontend ZIP for the complete 1.8.6 release.
 
 ## Deployment
 1. Upload the contents of `build198` to the existing static hosting location, replacing the previous frontend files.
-2. No new SQL migration is required for this frontend update. It uses the existing Lounge tables and `post_lounge_canned_reply` RPC.
-3. No Supabase Edge Function replacement is required for these frontend fixes. Keep the current `lounge-ai` function deployed.
-4. Open the app on both devices and use **Update now** if prompted. The service-worker cache is incremented to `luke-beth-shopping-v105`.
+2. Replace the Supabase `lounge-ai` Edge Function source with the complete `Index.ts` supplied alongside this ZIP, then deploy it.
+3. No SQL migration is required. The function uses the existing Lounge messages and AI usage tables.
+4. Open the app on both devices and use **Update now** if prompted. The service-worker cache is `luke-beth-shopping-v106`.
 
-## Important behaviour
-- Clearing the Lounge is household-wide and irreversible; the confirmation dialog explains this before proceeding.
-- Direct messages remain restricted to the sender and recipient by the existing database policies.
-- Canned replies still use the existing Supabase RPC; the typing animation is shown locally and broadcast to the other household member.
+## Notes
+- The AI model remains `gemini-3.5-flash-lite`; this update changes Wallace's instructions and request handling, not the model.
+- Gromit remains completely non-verbal.
+- The frontend ZIP contains only the app's existing required files.
