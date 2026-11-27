@@ -1241,7 +1241,7 @@ async function sendLoungeMessage(e){
  e.preventDefault();const input=$("#loungeMessageInput"),message=input.value.trim();if(!message||!state.householdId||!state.user)return;
  const button=$("#loungeSendButton");button.disabled=true;
  try{
-  const mention=message.match(/^@([\\w-]+)\\s+([\\s\\S]+)$/);
+  const mention=message.match(/^@([\w-]+)\s+([\s\S]+)$/);
   if(mention){
    const requested=mention[1].toLowerCase();
    const recipient=(state.members||[]).find(m=>m.user_id!==state.user.id&&(m.display_name||"").toLowerCase()===requested);
@@ -1268,8 +1268,19 @@ async function sendLoungeMessage(e){
   };
   const canned=localReplies[simple];
   if(canned){
-   const {error:localError}=await db.rpc("post_lounge_canned_reply",{p_household_id:state.householdId,p_reply_type:simple});
-   if(localError){console.warn("Local Lounge reply unavailable:",localError);toast("Couldn't send Wallace's quick reply. Please try again.");}
+   // Give quick replies the same character typing animation as AI-generated replies.
+   state.loungeAICharactersTyping.set("Wallace",{at:Date.now()});
+   broadcastLoungeAICharacterTyping("Wallace",true);
+   renderLoungeMessages();
+   await new Promise(resolve=>setTimeout(resolve,850));
+   try{
+    const {error:localError}=await db.rpc("post_lounge_canned_reply",{p_household_id:state.householdId,p_reply_type:simple});
+    if(localError){console.warn("Local Lounge reply unavailable:",localError);toast("Couldn't send Wallace's quick reply. Please try again.");}
+   }finally{
+    state.loungeAICharactersTyping.delete("Wallace");
+    broadcastLoungeAICharacterTyping("Wallace",false);
+    renderLoungeMessages();
+   }
   }else{
    const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
    if(aiError){console.warn("Lounge AI reply unavailable:",aiError);toast(aiError.message?.includes("not found")||aiError.message?.includes("404")?"Wallace needs his server function installed.":"Wallace is temporarily unavailable. Your chat connection is still active.");}
@@ -1279,12 +1290,12 @@ async function sendLoungeMessage(e){
 }
 function updateLoungeMentionSuggestions(){
  const input=$("#loungeMessageInput"),panel=$("#loungeMentionSuggestions");if(!input||!panel)return;
- const before=input.value.slice(0,input.selectionStart),match=before.match(/(?:^|\\s)@([\\w-]*)$/);
+ const before=input.value.slice(0,input.selectionStart),match=before.match(/(?:^|\s)@([\w-]*)$/);
  if(!match){panel.hidden=true;panel.innerHTML="";return;}
  const query=(match[1]||"").toLowerCase();
  const options=(state.members||[]).filter(m=>m.user_id!==state.user?.id&&(m.display_name||"").toLowerCase().includes(query));
  panel.innerHTML="";
- options.forEach(member=>{const b=document.createElement("button");b.type="button";b.className="lounge-mention-option";const avatar=document.createElement("span");avatar.className="lounge-mention-avatar";avatar.textContent=(member.display_name||"?").slice(0,1).toUpperCase();const name=document.createElement("strong");name.textContent=member.display_name||"Household member";const hint=document.createElement("small");hint.textContent="Send privately · no Wallace reply";b.append(avatar,name,hint);b.onclick=()=>{const start=input.selectionStart;const prefix=input.value.slice(0,start).replace(/(?:^|\\s)@[\\w-]*$/,(m)=>m.startsWith(" ")?" ":"");const suffix=input.value.slice(input.selectionEnd);input.value=prefix+"@"+member.display_name+" "+suffix;input.focus();const pos=(prefix+"@"+member.display_name+" ").length;input.setSelectionRange(pos,pos);panel.hidden=true;};panel.append(b);});
+ options.forEach(member=>{const b=document.createElement("button");b.type="button";b.className="lounge-mention-option";const avatar=document.createElement("span");avatar.className="lounge-mention-avatar";avatar.textContent=(member.display_name||"?").slice(0,1).toUpperCase();const name=document.createElement("strong");name.textContent=member.display_name||"Household member";const hint=document.createElement("small");hint.textContent="Send privately · no Wallace reply";b.append(avatar,name,hint);b.onclick=()=>{const start=input.selectionStart;const prefix=input.value.slice(0,start).replace(/(?:^|\s)@[\w-]*$/,(m)=>m.startsWith(" ")?" ":"");const suffix=input.value.slice(input.selectionEnd);input.value=prefix+"@"+member.display_name+" "+suffix;input.focus();const pos=(prefix+"@"+member.display_name+" ").length;input.setSelectionRange(pos,pos);panel.hidden=true;};panel.append(b);});
  panel.hidden=!options.length;
 }
 
@@ -1351,7 +1362,21 @@ function wire(){
  $("#newItem").addEventListener("blur",()=>setEditing(false));
  $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const category=await categoryForNewItem(name);const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:state.currentListId,name,quantity:1,is_bought:false,category,created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast(`Added to ${currentList()?.name||"your list"}.`);}};
  $("#clearBought").onclick=async()=>{const bought=state.items.filter(x=>x.is_bought);if(!bought.length)return toast("No bought items to clear.");const button=$("#clearBought");button.disabled=true;const {error}=await db.from("shopping_items").delete().eq("household_id",state.householdId).eq("list_id",state.currentListId).eq("is_bought",true);button.disabled=false;if(error){toast("Couldn't clear bought items: "+error.message);return;}const removedIds=new Set(bought.map(x=>x.id));state.items=state.items.filter(x=>!removedIds.has(x.id));renderItems();toast(`Cleared ${bought.length} bought item${bought.length===1?"":"s"}.`);};
- $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#clearLoungeButton").onclick=async()=>{if(!confirm("Clear the shared Lounge conversation for both Luke and Beth? This cannot be undone."))return;const b=$("#clearLoungeButton");b.disabled=true;const [a,d]=await Promise.all([db.from("household_lounge_messages").delete().eq("household_id",state.householdId),db.from("household_lounge_direct_messages").delete().eq("household_id",state.householdId)]);b.disabled=false;if(a.error||d.error){toast("Couldn't clear the Lounge: "+(a.error||d.error).message);return;}state.loungeMessages=[];state.loungeDirectMessages=[];renderLoungeMessages();$("#settingsDialog").close();toast("The shared Lounge conversation has been cleared.");};$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
+ $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();
+ $("#clearLoungeButton").onclick=()=>$("#clearLoungeConfirmDialog").showModal();
+ $("#closeClearLoungeConfirm").onclick=()=>$("#clearLoungeConfirmDialog").close();
+ $("#cancelClearLounge").onclick=()=>$("#clearLoungeConfirmDialog").close();
+ $("#confirmClearLoungeButton").onclick=async()=>{
+  const b=$("#confirmClearLoungeButton");b.disabled=true;b.textContent="Clearing…";
+  try{
+   const [a,d]=await Promise.all([db.from("household_lounge_messages").delete().eq("household_id",state.householdId),db.from("household_lounge_direct_messages").delete().eq("household_id",state.householdId)]);
+   if(a.error||d.error)throw (a.error||d.error);
+   state.loungeMessages=[];state.loungeDirectMessages=[];state.loungeAICharactersTyping.clear();state.loungeRemoteAICharactersTyping.clear();
+   renderLoungeMessages();$("#clearLoungeConfirmDialog").close();$("#settingsDialog").close();toast("The shared Lounge conversation has been cleared.");
+  }catch(error){toast("Couldn't clear the Lounge: "+(error?.message||"Please try again."));}
+  finally{b.disabled=false;b.textContent="Clear chat";}
+ };
+ $("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#cancelCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#copyMealForm").onsubmit=copySingleMealSubmit;$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};
@@ -1415,7 +1440,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();updateDashboardDateTime();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.8.0",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.8.5",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();

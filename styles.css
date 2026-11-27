@@ -933,3 +933,17 @@ main > .list-status-card + .share-button{
 .lounge-direct-message .lounge-message-bubble{border:1px solid rgba(45,190,170,.45);background:rgba(22,105,103,.17)}
 .lounge-settings-block{margin-top:18px;padding-top:16px;border-top:1px solid var(--line,rgba(130,150,210,.25))}
 .lounge-settings-block h3{margin:0 0 6px}
+
+
+/* 1.8.5 — Lounge clarity and confirmation polish */
+.lounge-character-card{gap:10px;padding:10px 12px;min-height:64px}
+.lounge-character-card img{width:48px;height:48px;flex:0 0 48px}
+.lounge-character-card strong{font-size:15px;line-height:1.2;font-weight:800;letter-spacing:.1px}
+.lounge-character-card small{font-size:11px;line-height:1.35;margin-top:4px}
+.lounge-character-card span{min-width:0}
+.lounge-confirm-dialog{max-width:440px}
+.lounge-confirm-dialog .more-description{line-height:1.55}
+.lounge-confirm-dialog .dialog-actions{margin-top:20px}
+.lounge-confirm-dialog .danger-button{min-height:46px}
+.lounge-mention-suggestions{margin-top:0}
+@media(max-width:380px){.lounge-character-card{padding:8px;gap:7px}.lounge-character-card img{width:42px;height:42px;flex-basis:42px}.lounge-character-card strong{font-size:14px}.lounge-character-card small{font-size:10px}}
