@@ -1,16 +1,17 @@
-# Luke & Beth's Shopping List — Version 1.7.28.0
+# Luke & Beth's Shopping List — Version 1.7.29.0
 
-### 1.7.28.0 — Household Intelligence (frontend package)
+### 1.7.29.0 — Alfred household data integration (frontend package)
 
-This package carries forward the confirmed 1.7.27.0 frontend and updates the release version. The Household Lounge intelligence improvements are delivered in the separate Supabase Edge Function supplied with this release.
+This is the frontend package for the 1.7.29.0 release. It preserves the 1.7.28.0 Household Lounge interface and increments the service-worker cache version. The functional household-data integration is delivered in the separate Supabase `lounge-ai` Edge Function supplied as copyable `Index.ts` code in the conversation.
 
 ## Deployment
 1. Replace the contents of your GitHub Pages deployment with the contents of `build198`.
-2. Deploy the separately supplied `Index.ts` to your existing Supabase `lounge-ai` Edge Function.
-3. Keep your existing database schema and environment secrets. No SQL migration is required for this update.
-4. Allow GitHub Pages to publish, then refresh the app. If an older version remains cached, close and reopen the app.
+2. Replace the existing Supabase `lounge-ai` Edge Function with the separate 1.7.29.0 `Index.ts` code and deploy it.
+3. No SQL migration is intended. The function reads existing `menu_entries`, `menu_favourites`, `household_members`, `household_lounge_messages`, `household_lounge_ai_usage`, `shopping_lists`, and `shopping_items` records.
+4. Shopping-list context is restricted to unbought items belonging to lists marked `is_shared=true`. If the `shopping_lists` lookup is unavailable, shopping context is omitted rather than exposing private-list items.
+5. Refresh the app after GitHub Pages publishes.
 
-The Edge Function reads the existing `household_members`, `household_lounge_messages`, `menu_entries`, `menu_favourites`, `shopping_lists`, `shopping_items`, and `household_lounge_ai_usage` tables. It scopes household context to the authenticated household.
-
-
-Alfred receives only unbought items from shared shopping lists; private shopping lists are excluded.
+## Notes
+- Past menu entries are distinguished from completed meals using `is_completed`; future entries are treated as plans.
+- Household member names are resolved from `household_members` using the message sender's `sender_id`.
+- The Edge Function is not included in this ZIP; use the copyable code supplied separately.
