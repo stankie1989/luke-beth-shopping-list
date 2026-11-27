@@ -1,4 +1,4 @@
-const CACHE="luke-beth-shopping-v102";
+const CACHE="luke-beth-shopping-v103";
 const CORE=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icon.svg","./icon-192.png","./icon-512.png","./images/wallace-avatar.png","./images/gromit-avatar.png","./apple-touch-icon.png","./images/sausages.png","./images/bangers-mash.png","./images/chicken-nuggets.png","./images/fish-fingers.png","./images/shepherds-pie.png","./images/spaghetti-bolognese.png","./images/chicken-fajitas.png","./images/roast-dinner.png","./images/macaroni-cheese.png","./images/chicken-curry.png","./images/beans-toast.png","./images/chips.png","./images/pancakes.png","./images/pizza.png","./images/tomato-soup.png","./images/fish-chips.png"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(CORE);})()));
 self.addEventListener("activate",event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim();})()));

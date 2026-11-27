@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=1.7.28.0">
+  <link rel="stylesheet" href="./styles.css?v=1.8.3">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -167,7 +167,7 @@
         <div class="lounge-typing" id="loungeTyping" aria-live="polite" hidden></div>
         <div class="lounge-message-count-row"><span id="loungeMessageCount">0 messages</span></div>
         <div id="loungeMessages" class="lounge-messages" aria-live="polite"><div class="lounge-empty"><span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p></div></div>
-        <form id="loungeMessageForm" class="lounge-compose"><input id="loungeMessageInput" maxlength="1200" autocomplete="off" placeholder="Ask Wallace anything…" aria-label="Write a Lounge message" required><button type="submit" id="loungeSendButton" aria-label="Send message">➤</button></form>
+        <div id="loungeMentionSuggestions" class="lounge-mention-suggestions" hidden></div><form id="loungeMessageForm" class="lounge-compose"><input id="loungeMessageInput" maxlength="1200" autocomplete="off" placeholder="Ask Wallace anything…" aria-label="Write a Lounge message" required><button type="submit" id="loungeSendButton" aria-label="Send message">➤</button></form>
         <p id="loungeStatus" class="lounge-status" role="status">Messages are shared with your household.</p>
       </section>
 
@@ -257,6 +257,7 @@
       <div class="modal-title"><h2>Personal settings</h2><button class="icon-button close" aria-label="Close">×</button></div>
       <p id="accountLabel" class="modal-note">Signed in</p>
       <button class="text-button" id="signOutButton" type="button">Sign out</button>
+      <div class="lounge-settings-block"><h3>Household Lounge</h3><p class="modal-note">Clear the shared conversation for both household members. This cannot be undone.</p><button class="danger-button" id="clearLoungeButton" type="button">Clear Lounge chat</button></div>
       <label for="themeSelect">My theme</label>
       <select id="themeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select>
       <p class="modal-note">Your theme preference is saved on this device. It won't change the other person's theme.</p>

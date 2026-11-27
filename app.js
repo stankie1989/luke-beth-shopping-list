@@ -7,7 +7,7 @@ const PICKUP_COLOUR_KEY="lb-pickup-colour-times";
 const pickupColourDefaults={greenUntil:"16:00",amberUntil:"18:00"};
 function getPickupColourTimes(){try{return {...pickupColourDefaults,...JSON.parse(localStorage.getItem(PICKUP_COLOUR_KEY)||"{}")};}catch{return {...pickupColourDefaults};}}
 let pickupColourTimes=getPickupColourTimes();
-const state={loungeMessages:[],loungeChannel:null,loungeLoaded:false,loungeAIThinking:false,loungeRemoteAIThinking:false,loungeAICharactersTyping:new Map(),loungeRemoteAICharactersTyping:new Map(),loungePreferredCharacter:null,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={loungeMessages:[],loungeDirectMessages:[],loungeChannel:null,loungeLoaded:false,loungeAIThinking:false,loungeRemoteAIThinking:false,loungeAICharactersTyping:new Map(),loungeRemoteAICharactersTyping:new Map(),loungePreferredCharacter:null,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 let loungeTypingTimer=null;
 let loungeTypingClearTimer=null;
@@ -1214,13 +1214,16 @@ async function loadLoungeMessages(){
  if(error){
   host.innerHTML="";const note=document.createElement("div");note.className="lounge-empty";note.innerHTML="<span>🛠️</span><strong>One small setup step remains</strong><p>The Lounge database hasn't been installed yet. Run the 1.7.21.0 SQL setup supplied with this update, then reopen the Lounge.</p>";host.append(note);$("#loungeStatus").textContent="Waiting for the Lounge database setup.";state.loungeLoaded=false;return;
  }
- state.loungeMessages=data||[];renderLoungeMessages();state.loungeLoaded=true;if(!state.loungeChannel)setLoungeStatus("Connecting…","connecting");
+ state.loungeMessages=data||[];
+ const {data:directData,error:directError}=await db.from("household_lounge_direct_messages").select("id,household_id,sender_id,recipient_id,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:true}).limit(150);
+ if(directError){console.warn("Direct Lounge messages unavailable:",directError.message);state.loungeDirectMessages=[];}else{state.loungeDirectMessages=(directData||[]).filter(m=>m.sender_id===state.user.id||m.recipient_id===state.user.id);}
+ renderLoungeMessages();state.loungeLoaded=true;if(!state.loungeChannel)setLoungeStatus("Connecting…","connecting");
 }
 function renderLoungeMessages(){
  const host=$("#loungeMessages");if(!host)return;host.innerHTML="";
  const names=Object.fromEntries((state.members||[]).map(m=>[m.user_id,m.display_name||"Household member"]));
  if(!state.loungeMessages.length){const empty=document.createElement("div");empty.className="lounge-empty";empty.innerHTML="<span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p>";host.append(empty);}
- state.loungeMessages.forEach(item=>{const character=item.sender_type==="character";const mine=!character&&item.sender_id===state.user?.id;const characterName=character?(item.sender_name==="Alfred"?"Wallace":item.sender_name):"";const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"")+(character?" lounge-character-message lounge-"+(characterName||"character").toLowerCase():"");const avatar=character?document.createElement("img"):document.createElement("span");avatar.className="lounge-message-avatar"+(character?" lounge-avatar-image":"");if(character){avatar.src=characterName==="Gromit"?"./images/gromit-avatar.png":"./images/wallace-avatar.png";avatar.alt=characterName;}else avatar.textContent=(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(character?characterName:(names[item.sender_id]||"Household member"));const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
+ [...state.loungeMessages,...state.loungeDirectMessages].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).forEach(item=>{const direct=!!item.recipient_id;const character=item.sender_type==="character";const mine=!character&&item.sender_id===state.user?.id;const characterName=character?(item.sender_name==="Alfred"?"Wallace":item.sender_name):"";const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"")+(direct?" lounge-direct-message":"")+(character?" lounge-character-message lounge-"+(characterName||"character").toLowerCase():"");const avatar=character?document.createElement("img"):document.createElement("span");avatar.className="lounge-message-avatar"+(character?" lounge-avatar-image":"");if(character){avatar.src=characterName==="Gromit"?"./images/gromit-avatar.png":"./images/wallace-avatar.png";avatar.alt=characterName;}else avatar.textContent=(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=direct?(mine?`You → ${names[item.recipient_id]||"household member"}`:`${names[item.sender_id]||"Household member"} → You`):(mine?"You":(character?characterName:(names[item.sender_id]||"Household member")));const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
  
  // Character-specific typing rows sit inside the conversation, beside the correct avatar.
  const activeTyping=new Map([...state.loungeAICharactersTyping,...state.loungeRemoteAICharactersTyping]);
@@ -1237,16 +1240,54 @@ function renderLoungeMessages(){
 async function sendLoungeMessage(e){
  e.preventDefault();const input=$("#loungeMessageInput"),message=input.value.trim();if(!message||!state.householdId||!state.user)return;
  const button=$("#loungeSendButton");button.disabled=true;
- const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,sender_type,sender_name,message,created_at").single();
- button.disabled=false;if(error){toast("Couldn't send message. Check that the Lounge SQL setup has been run.");return;}
- input.value="";const displayName=state.member?.display_name||state.user?.user_metadata?.name||"Household member";broadcastLoungeTyping(displayName,false);if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
- // The Edge Function now broadcasts the real speaker, in reply order.
- // Do not guess a character locally: that caused the wrong avatar to appear.
  try{
-  const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
-  if(aiError){console.warn("Lounge AI reply unavailable:",aiError);toast(aiError.message?.includes("not found")||aiError.message?.includes("404")?"Wallace needs his server function installed.":"Wallace is temporarily unavailable. Your chat connection is still active.");}
- }finally{renderLoungeTyping();renderLoungeMessages();}
+  const mention=message.match(/^@([\\w-]+)\\s+([\\s\\S]+)$/);
+  if(mention){
+   const requested=mention[1].toLowerCase();
+   const recipient=(state.members||[]).find(m=>m.user_id!==state.user.id&&(m.display_name||"").toLowerCase()===requested);
+   if(!recipient){toast("I couldn't find that household member. Choose their name from the @ suggestions.");return;}
+   const {data,error}=await db.from("household_lounge_direct_messages").insert({household_id:state.householdId,sender_id:state.user.id,recipient_id:recipient.user_id,message:mention[2].trim().slice(0,1200)}).select("id,household_id,sender_id,recipient_id,message,created_at").single();
+   if(error)throw error;
+   state.loungeDirectMessages.push(data);renderLoungeMessages();input.value="";
+   toast(`Sent directly to ${recipient.display_name}. Wallace will stay out of it.`);
+   return;
+  }
+  const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,sender_type,sender_name,message,created_at").single();
+  if(error)throw error;
+  input.value="";const displayName=state.member?.display_name||state.user?.user_metadata?.name||"Household member";broadcastLoungeTyping(displayName,false);
+  if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
+  const simple=message.toLowerCase().trim().replace(/[!.?]+$/,"");
+  const localReplies={
+   "hi":["Oh, hello! Just having a little fiddle with something in the workshop.","Alright! Kettle's nearly on. Well, it would be if I'd remembered to fill it."],
+   "hey":["Ey up! What's happening? I've just put the kettle on.","Oh, hello! You caught me halfway through a biscuit-related experiment."],
+   "hello":["Alright! Good to see you. Mind the bits on the floor, I'm fixing a toaster.","Hello there! Fancy a cuppa?"],
+   "thanks":["No worries! Happy to help.","You're welcome! Now, where did I put that screwdriver?"],
+   "thank you":["No worries at all!","Any time. That's what I'm here for!"],
+   "haha":["Heh! Gromit's not impressed. Can't think why.","Glad you liked that. Nearly made me spill me tea!"],
+   "lol":["Heh! Gromit's giving me that look again.","Glad that raised a smile!"]
+  };
+  const canned=localReplies[simple];
+  if(canned){
+   const {error:localError}=await db.rpc("post_lounge_canned_reply",{p_household_id:state.householdId,p_reply_type:simple});
+   if(localError){console.warn("Local Lounge reply unavailable:",localError);toast("Couldn't send Wallace's quick reply. Please try again.");}
+  }else{
+   const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
+   if(aiError){console.warn("Lounge AI reply unavailable:",aiError);toast(aiError.message?.includes("not found")||aiError.message?.includes("404")?"Wallace needs his server function installed.":"Wallace is temporarily unavailable. Your chat connection is still active.");}
+  }
+ }catch(error){console.error(error);toast("Couldn't send that Lounge message: "+(error?.message||"Please try again."));}
+ finally{button.disabled=false;renderLoungeTyping();renderLoungeMessages();}
 }
+function updateLoungeMentionSuggestions(){
+ const input=$("#loungeMessageInput"),panel=$("#loungeMentionSuggestions");if(!input||!panel)return;
+ const before=input.value.slice(0,input.selectionStart),match=before.match(/(?:^|\\s)@([\\w-]*)$/);
+ if(!match){panel.hidden=true;panel.innerHTML="";return;}
+ const query=(match[1]||"").toLowerCase();
+ const options=(state.members||[]).filter(m=>m.user_id!==state.user?.id&&(m.display_name||"").toLowerCase().includes(query));
+ panel.innerHTML="";
+ options.forEach(member=>{const b=document.createElement("button");b.type="button";b.className="lounge-mention-option";const avatar=document.createElement("span");avatar.className="lounge-mention-avatar";avatar.textContent=(member.display_name||"?").slice(0,1).toUpperCase();const name=document.createElement("strong");name.textContent=member.display_name||"Household member";const hint=document.createElement("small");hint.textContent="Send privately · no Wallace reply";b.append(avatar,name,hint);b.onclick=()=>{const start=input.selectionStart;const prefix=input.value.slice(0,start).replace(/(?:^|\\s)@[\\w-]*$/,(m)=>m.startsWith(" ")?" ":"");const suffix=input.value.slice(input.selectionEnd);input.value=prefix+"@"+member.display_name+" "+suffix;input.focus();const pos=(prefix+"@"+member.display_name+" ").length;input.setSelectionRange(pos,pos);panel.hidden=true;};panel.append(b);});
+ panel.hidden=!options.length;
+}
+
 function renderLoungeTyping(){
  const host=$("#loungeTyping");if(!host)return;
  const names=[...loungeRemoteTyping.values()].filter(x=>Date.now()-x.at<4500).map(x=>x.name);
@@ -1267,6 +1308,11 @@ function subscribeLounge(){
  setLoungeStatus("Connecting…","connecting");
  state.loungeChannel=db.channel("lounge-"+state.householdId)
  .on("postgres_changes",{event:"INSERT",schema:"public",table:"household_lounge_messages",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new&&!state.loungeMessages.some(x=>x.id===payload.new.id)){state.loungeMessages.push(payload.new);if(payload.new.sender_type==="character"){state.loungeAICharactersTyping.delete(payload.new.sender_name);state.loungeRemoteAICharactersTyping.delete(payload.new.sender_name);}renderLoungeMessages();}})
+ .on("postgres_changes",{event:"INSERT",schema:"public",table:"household_lounge_direct_messages",filter:`household_id=eq.${state.householdId}`},payload=>{
+   const m=payload.new;if(!m||state.loungeDirectMessages.some(x=>x.id===m.id))return;
+   if(m.sender_id===state.user.id||m.recipient_id===state.user.id){state.loungeDirectMessages.push(m);renderLoungeMessages();}
+   if(m.recipient_id===state.user.id){const sender=(state.members||[]).find(x=>x.user_id===m.sender_id)?.display_name||"Your household";appNotice("Message from "+sender,m.message);}
+ })
  .on("broadcast",{event:"typing"},({payload})=>{
    if(!payload||!payload.name)return;
    if(payload.typing)loungeRemoteTyping.set(payload.name,{name:payload.name,at:Date.now()});
@@ -1287,6 +1333,7 @@ function openLounge(){loadLoungeMessages();subscribeLounge();}
 function wire(){
  $("#loungeMessageForm").onsubmit=sendLoungeMessage;
  $("#loungeMessageInput").addEventListener("input",()=>{
+   updateLoungeMentionSuggestions();
    if(!state.loungeChannel)return;
    const displayName=state.member?.display_name||state.user?.user_metadata?.name||"Household member";
    broadcastLoungeTyping(displayName,true);
@@ -1304,7 +1351,7 @@ function wire(){
  $("#newItem").addEventListener("blur",()=>setEditing(false));
  $("#addForm").onsubmit=async e=>{e.preventDefault();const input=$("#newItem"),name=input.value.trim();if(!name)return;if(state.items.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("That item is already on your list.");const category=await categoryForNewItem(name);const {data,error}=await db.from("shopping_items").insert({household_id:state.householdId,list_id:state.currentListId,name,quantity:1,is_bought:false,category,created_by:state.user.id,updated_by:state.user.id}).select("*").single();if(error){toast("Couldn't add item: "+error.message);}else{if(!state.items.some(item=>item.id===data.id)){state.items.push(data);state.items.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderItems();}input.value="";toast(`Added to ${currentList()?.name||"your list"}.`);}};
  $("#clearBought").onclick=async()=>{const bought=state.items.filter(x=>x.is_bought);if(!bought.length)return toast("No bought items to clear.");const button=$("#clearBought");button.disabled=true;const {error}=await db.from("shopping_items").delete().eq("household_id",state.householdId).eq("list_id",state.currentListId).eq("is_bought",true);button.disabled=false;if(error){toast("Couldn't clear bought items: "+error.message);return;}const removedIds=new Set(bought.map(x=>x.id));state.items=state.items.filter(x=>!removedIds.has(x.id));renderItems();toast(`Cleared ${bought.length} bought item${bought.length===1?"":"s"}.`);};
- $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
+ $("#settingsButton").onclick=()=>$("#settingsDialog").showModal();$("#clearLoungeButton").onclick=async()=>{if(!confirm("Clear the shared Lounge conversation for both Luke and Beth? This cannot be undone."))return;const b=$("#clearLoungeButton");b.disabled=true;const [a,d]=await Promise.all([db.from("household_lounge_messages").delete().eq("household_id",state.householdId),db.from("household_lounge_direct_messages").delete().eq("household_id",state.householdId)]);b.disabled=false;if(a.error||d.error){toast("Couldn't clear the Lounge: "+(a.error||d.error).message);return;}state.loungeMessages=[];state.loungeDirectMessages=[];renderLoungeMessages();$("#settingsDialog").close();toast("The shared Lounge conversation has been cleared.");};$("#themeButton").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";localStorage.setItem("lb-theme",state.theme);theme();};$("#themeSelect").onchange=e=>{state.theme=e.target.value;localStorage.setItem("lb-theme",state.theme);theme();};
  $("#menuPrev").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()-14);state.menuStart=localISO(d);loadMenu();};
  $("#menuNext").onclick=()=>{const d=new Date(`${state.menuStart}T12:00:00`);d.setDate(d.getDate()+14);state.menuStart=localISO(d);loadMenu();};
  $("#menuToday").onclick=()=>{state.menuStart=localISO(mondayOf(new Date()));loadMenu();};$("#menuCopyDay").onclick=openCopyDayDialog;$("#closeCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#cancelCopyMeal").onclick=()=>$("#copyMealDialog").close();$("#copyMealForm").onsubmit=copySingleMealSubmit;$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#swapNowButton").onclick=()=>finishSwapChoice("swap");$("#cancelSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#closeSwapChoice").onclick=()=>finishSwapChoice("cancel");$("#swapChoiceDialog").addEventListener("cancel",()=>finishSwapChoice("cancel"));$("#closeCopyDay").onclick=()=>$("#copyDayDialog").close();$("#cancelCopyDay").onclick=()=>$("#copyDayDialog").close();$("#copyDayForm").onsubmit=copyWholeDay;$("#menuJumpDate").onchange=()=>{const value=$("#menuJumpDate").value;if(!value)return;state.menuStart=localISO(mondayOf(new Date(value+"T12:00:00")));loadMenu();};

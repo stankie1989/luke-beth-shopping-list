@@ -1,19 +1,19 @@
-# Luke & Beth's Shopping List — Version 1.8.0
+# Luke & Beth Shopping List — 1.8.3
 
-### 1.8.0 — Wallace & Gromit Household Lounge (frontend package)
-
-This is the frontend package for the 1.8.0 release, built from the confirmed 1.7.30.1 baseline. It introduces the Wallace & Gromit Lounge branding and portrait icons, retains the existing app features, and increments the service-worker cache to v102 with registration URL 1.8.0. The Supabase `lounge-ai` Edge Function is not included in this ZIP.
+## What's new
+- WhatsApp-style `@` autocomplete for the other household member.
+- Direct household messages stored separately from AI Lounge messages; direct messages do not invoke Wallace.
+- Clear shared Lounge conversation control in Personal Settings.
+- Local canned Wallace replies for simple greetings, thanks and short reactions to reduce Gemini calls.
+- Existing Wallace and Gromit portraits, household lists and meal planner retained.
 
 ## Deployment
-1. Replace the contents of your GitHub Pages deployment with the contents of `build198`.
-2. The Lounge Edge Function must be updated separately to return `Wallace` and `Gromit` as character names. The current deployed function source was not present in the confirmed frontend baseline, so do not overwrite it with an older copy.
-3. No SQL migration is included in this frontend package. The existing app continues to read `menu_entries`, `menu_favourites`, `household_members`, `household_lounge_messages`, `household_lounge_ai_usage`, `shopping_lists`, and `shopping_items` records.
-4. Shopping-list context is restricted to unbought items belonging to lists marked `is_shared=true`. If the `shopping_lists` lookup is unavailable, shopping context is omitted rather than exposing private-list items.
-5. Refresh the app after GitHub Pages publishes.
+1. Upload the contents of `build198` to the existing static hosting location, replacing the previous frontend files.
+2. Run the supplied SQL migration in Supabase SQL Editor before testing direct mentions.
+3. The existing `lounge-ai` Edge Function remains compatible. For the updated Gromit appearance frequency, deploy the matching 1.8.3 Edge Function supplied separately.
+4. Clear the app cache/reload if the update banner does not appear.
 
 ## Notes
-- The UI recognises legacy `Alfred` messages and displays them as Wallace so the conversation remains intact. New server replies should use the character name `Wallace`.
-- The character portraits are bundled locally in `images/wallace-avatar.png` and `images/gromit-avatar.png`.
-- Past menu entries are distinguished from completed meals using `is_completed`; future entries are treated as plans.
-- Household member names are resolved from `household_members` using the message sender's `sender_id`.
-- The Edge Function is not included in this ZIP; use the copyable code supplied separately.
+- Direct messages are visible only to their sender and recipient in the database policy.
+- In-app/browser notifications can appear while the app is open and notification permission is granted. This release does not configure background push delivery when the app is fully closed.
+- Local replies are deliberately limited to simple greetings, thanks and short reactions; substantive questions continue to use Gemini.
