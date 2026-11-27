@@ -7,7 +7,7 @@ const PICKUP_COLOUR_KEY="lb-pickup-colour-times";
 const pickupColourDefaults={greenUntil:"16:00",amberUntil:"18:00"};
 function getPickupColourTimes(){try{return {...pickupColourDefaults,...JSON.parse(localStorage.getItem(PICKUP_COLOUR_KEY)||"{}")};}catch{return {...pickupColourDefaults};}}
 let pickupColourTimes=getPickupColourTimes();
-const state={calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={loungeMessages:[],loungeChannel:null,loungeLoaded:false,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 function toast(s){const e=$("#toast");if(!e){console.info(s);return;}e.textContent=s;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove("show"),2500);}
 function appNotice(title,body){
@@ -1204,7 +1204,37 @@ function updateAuthMode(){
  $("#authModeToggle").textContent=signingUp?"Already registered? Sign in":"New here? Create an account";
  $("#authPassword").autocomplete=signingUp?"new-password":"current-password";
 }
+async function loadLoungeMessages(){
+ if(!state.householdId)return;
+ const host=$("#loungeMessages");
+ const {data,error}=await db.from("household_lounge_messages").select("id,household_id,sender_id,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:true}).limit(150);
+ if(error){
+  host.innerHTML="";const note=document.createElement("div");note.className="lounge-empty";note.innerHTML="<span>🛠️</span><strong>One small setup step remains</strong><p>The Lounge database hasn't been installed yet. Run the 1.7.21.0 SQL setup supplied with this update, then reopen the Lounge.</p>";host.append(note);$("#loungeStatus").textContent="Waiting for the Lounge database setup.";state.loungeLoaded=false;return;
+ }
+ state.loungeMessages=data||[];renderLoungeMessages();state.loungeLoaded=true;$("#loungeStatus").textContent="Connected · Messages are shared with your household.";
+}
+function renderLoungeMessages(){
+ const host=$("#loungeMessages");if(!host)return;host.innerHTML="";
+ const names=Object.fromEntries((state.members||[]).map(m=>[m.user_id,m.display_name||"Household member"]));
+ if(!state.loungeMessages.length){const empty=document.createElement("div");empty.className="lounge-empty";empty.innerHTML="<span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p>";host.append(empty);}
+ state.loungeMessages.forEach(item=>{const mine=item.sender_id===state.user?.id;const row=document.createElement("article");row.className="lounge-message-row"+(mine?" mine":"");const avatar=document.createElement("span");avatar.className="lounge-message-avatar";avatar.textContent=(names[item.sender_id]||"?").slice(0,1).toUpperCase();const bubble=document.createElement("div");bubble.className="lounge-message-bubble";const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=mine?"You":(names[item.sender_id]||"Household member");const time=document.createElement("time");time.dateTime=item.created_at;time.textContent=new Date(item.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});meta.append(who,time);const body=document.createElement("p");body.textContent=item.message;bubble.append(meta,body);row.append(avatar,bubble);host.append(row);});
+ $("#loungeMessageCount").textContent=`${state.loungeMessages.length} message${state.loungeMessages.length===1?"":"s"}`;host.scrollTop=host.scrollHeight;
+}
+async function sendLoungeMessage(e){
+ e.preventDefault();const input=$("#loungeMessageInput"),message=input.value.trim();if(!message||!state.householdId||!state.user)return;
+ const button=$("#loungeSendButton");button.disabled=true;
+ const {data,error}=await db.from("household_lounge_messages").insert({household_id:state.householdId,sender_id:state.user.id,message:message.slice(0,1200)}).select("id,household_id,sender_id,message,created_at").single();
+ button.disabled=false;if(error){toast("Couldn't send message. Check that the Lounge SQL setup has been run.");return;}
+ input.value="";if(data&&!state.loungeMessages.some(x=>x.id===data.id)){state.loungeMessages.push(data);renderLoungeMessages();}
+}
+function subscribeLounge(){
+ if(!state.householdId||state.loungeChannel)return;
+ state.loungeChannel=db.channel("lounge-"+state.householdId).on("postgres_changes",{event:"INSERT",schema:"public",table:"household_lounge_messages",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new&&!state.loungeMessages.some(x=>x.id===payload.new.id)){state.loungeMessages.push(payload.new);renderLoungeMessages();}}).subscribe();
+}
+function openLounge(){loadLoungeMessages();subscribeLounge();}
+
 function wire(){
+ $("#loungeMessageForm").onsubmit=sendLoungeMessage;
  $("#connectCalendarButton").onclick=connectGoogleCalendar;$("#refreshCalendarButton").onclick=()=>loadCalendarShifts(true);$("#refreshWeatherButton").onclick=()=>loadWeather(true);
  $("#applyUpdate").onclick=()=>{if(waitingWorker){waitingWorker.postMessage({type:"SKIP_WAITING"});$("#applyUpdate").disabled=true;$("#applyUpdate").textContent="Updating…";}};
  $("#dismissUpdate").onclick=()=>$("#updateBanner").hidden=true;
@@ -1256,6 +1286,7 @@ function wire(){
   $("#historyPanel").classList.toggle("hidden",tab!=="history");
   $("#notificationsPanel").classList.toggle("hidden",tab!=="notifications");
   $("#menuPanel").classList.toggle("hidden",tab!=="menu");
+  $("#loungePanel").classList.toggle("hidden",tab!=="lounge");
   const menuTabActive=tab==="menu";
   $("#appShell").classList.toggle("menu-tab-active",menuTabActive);
   $("#appShell").classList.toggle("shopping-tab-active",tab==="list");
@@ -1269,6 +1300,7 @@ function wire(){
   $("#shareHint").classList.toggle("hidden",tab!=="list");
   $(".list-panel").classList.toggle("hidden",tab!=="list");
   $(".people-strip").classList.toggle("hidden",tab==="more");
+  if(tab==="lounge")openLounge();
   if(tab==="history")refreshActivity();
   if(tab==="dashboard"){renderDashboard();if(state.menuEntries.length===0)loadMenu();loadCalendarShifts();renderWeather();}
   if(tab==="menu"){if(!state.menuStart)state.menuStart=localISO(mondayOf(new Date()));loadMenu();loadMenuFavourites();}
@@ -1277,7 +1309,7 @@ function wire(){
 async function init(){state.menuStart=localISO(mondayOf(new Date()));theme();wire();handleCalendarReturn();setInterval(()=>{if(state.items.length)renderItems();updateDashboardDateTime();},60*1000);setInterval(()=>{if(document.visibilityState==="visible"&&state.user){refreshCurrentList();refreshActivity();refreshListStatus();if(!$("#menuPanel").classList.contains("hidden"))loadMenu();}},4000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshActivity();});const {data:{session}}=await db.auth.getSession();if(session?.user){state.user=session.user;try{await enter();}catch(e){loggedOut();msg("#authMessage",e.message,true);}}else loggedOut();db.auth.onAuthStateChange(async(_,session)=>{if(session?.user&&!state.user){state.user=session.user;try{await enter();}catch(e){msg("#authMessage",e.message,true);}}});if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
   let refreshing=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!refreshing){refreshing=true;location.reload();}});
-  navigator.serviceWorker.register("./sw.js?v=1.7.19.9",{updateViaCache:"none"}).then(reg=>{
+  navigator.serviceWorker.register("./sw.js?v=1.7.21.0",{updateViaCache:"none"}).then(reg=>{
    const showUpdate=worker=>{if(!worker)return;waitingWorker=worker;$("#updateBanner").hidden=false;$("#applyUpdate").disabled=false;$("#applyUpdate").textContent="Update now";};
    const inspectRegistration=()=>{if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);};
    inspectRegistration();
