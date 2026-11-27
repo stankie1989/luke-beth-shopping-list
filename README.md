@@ -1,22 +1,34 @@
-# Luke & Beth's Shopping List — Version 1.7.24.0
+# Luke & Beth's Shopping List — Version 1.7.25.0
 
 ## Release notes
 
-### 1.7.24.0 — Household Lounge AI presence
-- Added a shared “Alfred and Gromit are thinking” indicator while the secure Lounge AI function is processing a household message.
-- The indicator is shown to both household members through Supabase Realtime and clears when the AI function finishes or errors.
-- Kept the existing human typing indicator, message counter, clean Lounge layout, character styling, and current AI invocation.
-- Updated the app version labels, asset query versions, and service-worker cache to v96.
+### 1.7.25.0 — Household Lounge AI conversation upgrade
+- Made the AI thinking indicator more noticeable using the app's purple accent colour.
+- Increased the AI indicator font size and weight while leaving ordinary human typing indicators more subtle.
+- Updated the Lounge AI Edge Function prompt to strengthen Alfred's butler voice and Gromit's playful, affectionate personality.
+- The AI now has clearer permission to stay quiet when there is nothing useful to add, usually select one character, and only occasionally choose a second character for a distinct follow-up.
+- When two character replies are selected, the Edge Function inserts the first reply, waits 2.4 seconds, then inserts the second so the conversation feels less robotic.
+- Preserved authentication, household membership checks, Gemini API configuration, the 8-second cooldown, and the 40-turn-per-household UTC daily limit.
+- No SQL migration is required.
 
-## Important scope note
-This is the **frontend update**. It improves the visible AI conversation experience, but it does not change the server-side Gemini prompts, decide which character responds, or introduce staggered Alfred/Gromit replies. Those behaviours live in the Supabase `lounge-ai` Edge Function and require a separate Edge Function update. No SQL migration is required for this frontend change.
-
-## Upload instructions
+## Frontend deployment
 1. Extract this ZIP.
 2. Open the `build198` folder.
 3. Upload the contents of `build198` to the existing GitHub Pages repository, replacing the corresponding files.
 4. Keep the `images` folder and all its contents.
-5. Refresh the app. If an installed PWA still shows the previous version, close and reopen it after the service worker updates.
+5. Refresh the app. If the installed PWA still shows the previous version, close and reopen it after the service worker updates.
 
-## Supabase notes
-Do not delete or replace existing database objects, secrets, or the deployed `lounge-ai` function when uploading this frontend package. The Gemini API key must remain stored as a Supabase secret and must never be placed in frontend files.
+## Supabase Edge Function deployment
+The updated function is included at:
+`supabase/functions/lounge-ai/index.ts`
+
+Deploy this file to the existing Supabase project as the `lounge-ai` Edge Function, replacing the current function code. For Supabase CLI users, from the project root run:
+
+`supabase functions deploy lounge-ai`
+
+Alternatively, paste the contents of the included `index.ts` into the existing `lounge-ai` function in the Supabase Dashboard and deploy it.
+
+Keep the existing Supabase secrets and database tables. In particular, do not remove or expose `GEMINI_API_KEY`, `SUPABASE_URL`, or the existing Supabase keys. No database schema changes are included or needed.
+
+## Important
+The frontend and Edge Function are both included in this package, but they deploy separately: upload the `build198` contents to GitHub Pages and deploy the Edge Function to Supabase. The Edge Function change has not been live-tested against your Supabase project. After deployment, test a normal message, a quiet/no-reply turn, and a two-character turn. Existing usage limits are retained in the code.
