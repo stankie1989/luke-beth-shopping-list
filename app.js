@@ -1214,7 +1214,7 @@ async function loadLoungeMessages(){
  if(error){
   host.innerHTML="";const note=document.createElement("div");note.className="lounge-empty";note.innerHTML="<span>🛠️</span><strong>One small setup step remains</strong><p>The Lounge database hasn't been installed yet. Run the 1.7.21.0 SQL setup supplied with this update, then reopen the Lounge.</p>";host.append(note);$("#loungeStatus").textContent="Waiting for the Lounge database setup.";state.loungeLoaded=false;return;
  }
- state.loungeMessages=data||[];renderLoungeMessages();state.loungeLoaded=true;$("#loungeStatus").textContent="Connected · Alfred and Gromit are listening.";
+ state.loungeMessages=data||[];renderLoungeMessages();state.loungeLoaded=true;if(!state.loungeChannel)setLoungeStatus("Connecting…","connecting");
 }
 function renderLoungeMessages(){
  const host=$("#loungeMessages");if(!host)return;host.innerHTML="";
@@ -1244,7 +1244,7 @@ async function sendLoungeMessage(e){
  // Do not guess a character locally: that caused the wrong avatar to appear.
  try{
   const {error:aiError}=await db.functions.invoke("lounge-ai",{body:{household_id:state.householdId,message_id:data?.id}});
-  if(aiError){console.warn("Lounge AI reply unavailable:",aiError);if(aiError.message?.includes("not found")||aiError.message?.includes("404")){$("#loungeStatus").textContent="Chat connected · AI characters need their server function installed.";}else{$("#loungeStatus").textContent="Chat connected · AI is temporarily unavailable.";}}
+  if(aiError){console.warn("Lounge AI reply unavailable:",aiError);toast(aiError.message?.includes("not found")||aiError.message?.includes("404")?"Alfred needs his server function installed.":"Alfred is temporarily unavailable. Your chat connection is still active.");}
  }finally{renderLoungeTyping();renderLoungeMessages();}
 }
 function renderLoungeTyping(){
@@ -1261,8 +1261,10 @@ function broadcastLoungeAICharacterTyping(character,typing=true){
  if(!state.loungeChannel)return;
  state.loungeChannel.send({type:"broadcast",event:"ai-character-typing",payload:{character,typing,at:Date.now()}});
 }
+function setLoungeStatus(label,mode="connected"){const el=$("#loungeStatus");if(!el)return;el.textContent=label;el.classList.remove("status-connected","status-disconnected","status-connecting");el.classList.add(mode==="connected"?"status-connected":mode==="disconnected"?"status-disconnected":"status-connecting");}
 function subscribeLounge(){
  if(!state.householdId||state.loungeChannel)return;
+ setLoungeStatus("Connecting…","connecting");
  state.loungeChannel=db.channel("lounge-"+state.householdId)
  .on("postgres_changes",{event:"INSERT",schema:"public",table:"household_lounge_messages",filter:`household_id=eq.${state.householdId}`},payload=>{if(payload.new&&!state.loungeMessages.some(x=>x.id===payload.new.id)){state.loungeMessages.push(payload.new);if(payload.new.sender_type==="character"){state.loungeAICharactersTyping.delete(payload.new.sender_name);state.loungeRemoteAICharactersTyping.delete(payload.new.sender_name);}renderLoungeMessages();}})
  .on("broadcast",{event:"typing"},({payload})=>{
@@ -1278,7 +1280,7 @@ function subscribeLounge(){
    if(payload.typing)state.loungeRemoteAICharactersTyping.set(character,{at:Date.now()});
    else state.loungeRemoteAICharactersTyping.delete(character);
    renderLoungeMessages();
- }).subscribe();
+ }).subscribe((status)=>{if(status==="SUBSCRIBED")setLoungeStatus("Connected","connected");else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status))setLoungeStatus("Not connected","disconnected");else if(status==="SUBSCRIBING")setLoungeStatus("Connecting…","connecting");});
 }
 function openLounge(){loadLoungeMessages();subscribeLounge();}
 
