@@ -1232,7 +1232,7 @@ async function loadOlderLoungeMessages(){
  }catch(error){console.warn("Could not load older Lounge messages:",error);toast("Couldn't load older Lounge messages. Please try again.");}
  finally{state.loungeLoadingOlder=false;updateLoungeHistoryButton();}
 }
-function updateLoungeHistoryButton(){const button=$("#loadOlderLoungeMessages");if(!button)return;button.hidden=!state.loungeHasOlder;button.disabled=state.loungeLoadingOlder;button.textContent=state.loungeLoadingOlder?"Loading older messages…":"↑ Load older messages";}
+function updateLoungeHistoryButton(){const button=$("#loadOlderLoungeMessages");if(!button)return;button.hidden=!state.loungeHasOlder;button.disabled=state.loungeLoadingOlder;button.textContent=state.loungeLoadingOlder?"Loading older messages…":"↑ Load previous messages";}
 
 function renderLoungeMessages(keepPosition=false){
  const host=$("#loungeMessages");if(!host)return;host.innerHTML="";

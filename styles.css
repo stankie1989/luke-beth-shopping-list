@@ -948,6 +948,8 @@ main > .list-status-card + .share-button{
 .lounge-mention-suggestions{margin-top:0}
 @media(max-width:380px){.lounge-character-card{padding:8px;gap:7px}.lounge-character-card img{width:42px;height:42px;flex-basis:42px}.lounge-character-card strong{font-size:14px}.lounge-character-card small{font-size:10px}}
 
-/* 1.9.2: compact history pagination control */
-.lounge-load-older{font-size:12px;padding:5px 9px;margin-right:auto}
+/* 1.9.3: make history pagination visibly actionable */
+.lounge-load-older{font-size:12px;padding:8px 12px;margin-right:auto;min-height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--accent);font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.lounge-load-older:active{transform:translateY(1px);filter:brightness(1.12)}
+.lounge-load-older:disabled{opacity:.65;cursor:wait}
 .lounge-load-older[hidden]{display:none}
