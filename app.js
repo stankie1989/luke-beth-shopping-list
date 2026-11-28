@@ -7,7 +7,7 @@ const PICKUP_COLOUR_KEY="lb-pickup-colour-times";
 const pickupColourDefaults={greenUntil:"16:00",amberUntil:"18:00"};
 function getPickupColourTimes(){try{return {...pickupColourDefaults,...JSON.parse(localStorage.getItem(PICKUP_COLOUR_KEY)||"{}")};}catch{return {...pickupColourDefaults};}}
 let pickupColourTimes=getPickupColourTimes();
-const state={loungeMessages:[],loungeDirectMessages:[],loungeChannel:null,loungeLoaded:false,loungeAIThinking:false,loungeRemoteAIThinking:false,loungeAICharactersTyping:new Map(),loungeRemoteAICharactersTyping:new Map(),loungePreferredCharacter:null,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
+const state={loungeMessages:[],loungeDirectMessages:[],loungeChannel:null,loungeLoaded:false,loungeHasOlder:false,loungeLoadingOlder:false,loungeAIThinking:false,loungeRemoteAIThinking:false,loungeAICharactersTyping:new Map(),loungeRemoteAICharactersTyping:new Map(),loungePreferredCharacter:null,calendar:{connected:false,loading:false,loaded:false,shifts:[],email:null,error:null},weather:{loading:false,loaded:false,data:null,error:null,shiftId:null},recentMealIcons:JSON.parse(localStorage.getItem("lb-recent-meal-icons")||"[]"),menuEntries:[],missedMeals:[],menuFavourites:[],menuStart:null,editingMealId:null,selectedMealImage:"dinner",activeMenuSlot:"dinner",datePickerValue:null,datePickerMonth:null,datePickerAction:null,selectedShoppingListId:null,pendingMealIngredients:null,mealIconsExpanded:false,user:null,member:null,householdId:null,partner:null,household:null,members:[],items:[],lists:[],currentListId:null,activity:[],listStatus:null,latestShare:null,latestApproval:null,approvalDismissed:false,theme:localStorage.getItem("lb-theme")||"dark",channel:null,authMode:"signin"};
 let toastTimer;
 let loungeTypingTimer=null;
 let loungeTypingClearTimer=null;
@@ -1210,16 +1210,31 @@ function updateAuthMode(){
 async function loadLoungeMessages(){
  if(!state.householdId)return;
  const host=$("#loungeMessages");
- const {data,error}=await db.from("household_lounge_messages").select("id,household_id,sender_id,sender_type,sender_name,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:true}).limit(150);
+ const {data,error}=await db.from("household_lounge_messages").select("id,household_id,sender_id,sender_type,sender_name,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:false}).limit(150);
  if(error){
   host.innerHTML="";const note=document.createElement("div");note.className="lounge-empty";note.innerHTML="<span>🛠️</span><strong>One small setup step remains</strong><p>The Lounge database hasn't been installed yet. Run the 1.7.21.0 SQL setup supplied with this update, then reopen the Lounge.</p>";host.append(note);$("#loungeStatus").textContent="Waiting for the Lounge database setup.";state.loungeLoaded=false;return;
  }
- state.loungeMessages=data||[];
- const {data:directData,error:directError}=await db.from("household_lounge_direct_messages").select("id,household_id,sender_id,recipient_id,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:true}).limit(150);
- if(directError){console.warn("Direct Lounge messages unavailable:",directError.message);state.loungeDirectMessages=[];}else{state.loungeDirectMessages=(directData||[]).filter(m=>m.sender_id===state.user.id||m.recipient_id===state.user.id);}
- renderLoungeMessages();state.loungeLoaded=true;if(!state.loungeChannel)setLoungeStatus("Connecting…","connecting");
+ state.loungeMessages=(data||[]).reverse();state.loungeHasOlder=(data||[]).length===150;
+ const {data:directData,error:directError}=await db.from("household_lounge_direct_messages").select("id,household_id,sender_id,recipient_id,message,created_at").eq("household_id",state.householdId).order("created_at",{ascending:false}).limit(150);
+ if(directError){console.warn("Direct Lounge messages unavailable:",directError.message);state.loungeDirectMessages=[];}else{state.loungeDirectMessages=(directData||[]).reverse().filter(m=>m.sender_id===state.user.id||m.recipient_id===state.user.id);}
+ updateLoungeHistoryButton();renderLoungeMessages();state.loungeLoaded=true;if(!state.loungeChannel)setLoungeStatus("Connecting…","connecting");
 }
-function renderLoungeMessages(){
+async function loadOlderLoungeMessages(){
+ if(!state.householdId||!state.loungeHasOlder||state.loungeLoadingOlder||!state.loungeMessages.length)return;
+ state.loungeLoadingOlder=true;const button=$("#loadOlderLoungeMessages");if(button){button.disabled=true;button.textContent="Loading older messages…";}
+ const host=$("#loungeMessages"),oldHeight=host.scrollHeight,oldTop=host.scrollTop;
+ try{
+  const oldest=state.loungeMessages[0].created_at;
+  const {data,error}=await db.from("household_lounge_messages").select("id,household_id,sender_id,sender_type,sender_name,message,created_at").eq("household_id",state.householdId).lt("created_at",oldest).order("created_at",{ascending:false}).limit(150);
+  if(error)throw error;
+  const older=(data||[]).reverse();const known=new Set(state.loungeMessages.map(m=>m.id));state.loungeMessages=[...older.filter(m=>!known.has(m.id)),...state.loungeMessages];state.loungeHasOlder=(data||[]).length===150;
+  renderLoungeMessages(true);host.scrollTop=oldTop+(host.scrollHeight-oldHeight);updateLoungeHistoryButton();
+ }catch(error){console.warn("Could not load older Lounge messages:",error);toast("Couldn't load older Lounge messages. Please try again.");}
+ finally{state.loungeLoadingOlder=false;updateLoungeHistoryButton();}
+}
+function updateLoungeHistoryButton(){const button=$("#loadOlderLoungeMessages");if(!button)return;button.hidden=!state.loungeHasOlder;button.disabled=state.loungeLoadingOlder;button.textContent=state.loungeLoadingOlder?"Loading older messages…":"↑ Load older messages";}
+
+function renderLoungeMessages(keepPosition=false){
  const host=$("#loungeMessages");if(!host)return;host.innerHTML="";
  const names=Object.fromEntries((state.members||[]).map(m=>[m.user_id,m.display_name||"Household member"]));
  if(!state.loungeMessages.length){const empty=document.createElement("div");empty.className="lounge-empty";empty.innerHTML="<span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p>";host.append(empty);}
@@ -1235,7 +1250,7 @@ function renderLoungeMessages(){
   const meta=document.createElement("div");meta.className="lounge-message-meta";const who=document.createElement("strong");who.textContent=character;const status=document.createElement("time");status.textContent="typing";meta.append(who,status);
   const dots=document.createElement("div");dots.className="lounge-typing-dots";dots.setAttribute("aria-label",character+" is typing");dots.innerHTML="<i></i><i></i><i></i>";bubble.append(meta,dots);row.append(avatar,bubble);host.append(row);
  }
- const count=$("#loungeMessageCount");if(count)count.textContent=`${state.loungeMessages.length} message${state.loungeMessages.length===1?"":"s"}`;host.scrollTop=host.scrollHeight;
+ const count=$("#loungeMessageCount");if(count)count.textContent=`${state.loungeMessages.length} message${state.loungeMessages.length===1?"":"s"}`;if(!keepPosition)host.scrollTop=host.scrollHeight;
 }
 async function sendLoungeMessage(e){
  e.preventDefault();const input=$("#loungeMessageInput"),message=input.value.trim();if(!message||!state.householdId||!state.user)return;
@@ -1344,6 +1359,7 @@ function openLounge(){loadLoungeMessages();subscribeLounge();}
 
 function wire(){
  $("#loungeMessageForm").onsubmit=sendLoungeMessage;
+ $("#loadOlderLoungeMessages").onclick=loadOlderLoungeMessages;
  $("#loungeMessageInput").addEventListener("input",()=>{
    updateLoungeMentionSuggestions();
    if(!state.loungeChannel)return;

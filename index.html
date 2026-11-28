@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=1.9.1">
+  <link rel="stylesheet" href="./styles.css?v=1.9.2">
   <title>Luke & Beth — Shopping List</title>
 </head>
 <body>
@@ -165,7 +165,7 @@
         <div class="lounge-heading"><div><span class="section-icon">🏡</span><div><h2>Wallace &amp; Gromit’s Household Lounge</h2><p>Your household helpers are ready for duty.</p></div></div><span class="lounge-live-pill"><i></i> HOUSEHOLD</span></div>
         <div class="lounge-character-pair"><div class="lounge-character-card"><img src="./images/wallace-avatar.png" alt="Wallace"/><span><strong>Wallace</strong><small>Household assistant</small></span></div><div class="lounge-character-card"><img src="./images/gromit-avatar.png" alt="Gromit"/><span><strong>Gromit</strong><small>Chief of common sense</small></span></div></div>
         <div class="lounge-typing" id="loungeTyping" aria-live="polite" hidden></div>
-        <div class="lounge-message-count-row"><span id="loungeMessageCount">0 messages</span></div>
+        <div class="lounge-message-count-row"><button type="button" id="loadOlderLoungeMessages" class="text-button lounge-load-older" hidden>↑ Load older messages</button><span id="loungeMessageCount">0 messages</span></div>
         <div id="loungeMessages" class="lounge-messages" aria-live="polite"><div class="lounge-empty"><span>💬</span><strong>It's lovely and quiet in here.</strong><p>Send the first message to get the conversation started.</p></div></div>
         <div id="loungeMentionSuggestions" class="lounge-mention-suggestions" hidden></div><form id="loungeMessageForm" class="lounge-compose"><input id="loungeMessageInput" maxlength="1200" autocomplete="off" placeholder="Ask Wallace anything…" aria-label="Write a Lounge message" required><button type="submit" id="loungeSendButton" aria-label="Send message">➤</button></form>
         <p id="loungeStatus" class="lounge-status" role="status">Messages are shared with your household.</p>
@@ -202,7 +202,7 @@
         <section class="more-section"><h3>Beth's pickup colours</h3><p class="more-description">Choose when the finish-time badges change from green to amber and from amber to red.</p><div class="pickup-colour-settings"><label for="pickupGreenUntil">Green until</label><input id="pickupGreenUntil" type="time" value="16:00"><label for="pickupAmberUntil">Amber until</label><input id="pickupAmberUntil" type="time" value="18:00"></div><p class="more-description">Finishes before the first time are green. Finishes up to and including the second time are amber. Later finishes are red.</p><p id="pickupColourStatus" class="more-description" role="status">Default times: 16:00 and 18:00.</p><button id="resetPickupColours" class="secondary-button compact" type="button">Reset default times</button></section>
         <section class="more-section"><h3>Personal settings</h3><p class="more-description">Your theme preference only affects this device.</p><label for="moreThemeSelect">My theme</label>
           <select id="moreThemeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Follow device</option></select><button id="moreSignOut" class="text-button" type="button">Sign out</button></section>
-        <p class="app-version">Luke & Beth's Shopping List · Version 1.9.1</p>
+        <p class="app-version">Luke & Beth's Shopping List · Version 1.9.2</p>
       </section>
 
       <section id="listStatusCard" class="list-status-card status-neutral" aria-live="polite">
@@ -428,6 +428,6 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=1.9.1"></script>
+  <script src="./app.js?v=1.9.2"></script>
 </body>
 </html>

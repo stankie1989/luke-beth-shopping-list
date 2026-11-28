@@ -947,3 +947,7 @@ main > .list-status-card + .share-button{
 .lounge-confirm-dialog .danger-button{min-height:46px}
 .lounge-mention-suggestions{margin-top:0}
 @media(max-width:380px){.lounge-character-card{padding:8px;gap:7px}.lounge-character-card img{width:42px;height:42px;flex-basis:42px}.lounge-character-card strong{font-size:14px}.lounge-character-card small{font-size:10px}}
+
+/* 1.9.2: compact history pagination control */
+.lounge-load-older{font-size:12px;padding:5px 9px;margin-right:auto}
+.lounge-load-older[hidden]{display:none}
